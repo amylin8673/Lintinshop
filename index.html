@@ -3,138 +3,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 系統</title>
+    <title>LinTin 協作系統 v2</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 1. 主畫面樣式 - 保持簡潔 */
-        body { font-family: sans-serif; padding: 20px; background-color: #f0f8ff; }
-        .main-container { max-width: 600px; margin: 0 auto; text-align: center; }
-        
-        /* 你原本的淺藍色按鈕樣式 */
-        .add-main-btn {
-            background-color: #87CEFA; 
-            color: white;
-            border: none;
-            padding: 10px 25px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 16px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        /* 2. 彈跳視窗（Modal）背景 */
-        .modal {
-            display: none; /* 預設隱藏 */
-            position: fixed;
-            z-index: 1;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.4); /* 背景變暗 */
-        }
-
-        /* 3. 彈跳視窗內容盒（截圖二的介面） */
-        .modal-content {
-            background-color: #fefefe;
-            margin: 15% auto;
-            padding: 25px;
-            border-radius: 12px;
-            width: 300px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
-        input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-
-        /* 彈跳視窗內的確認按鈕 */
-        .confirm-btn {
-            width: 100%;
-            background-color: #87CEFA;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        /* 關閉按鈕 */
-        .close-btn {
-            float: right;
-            color: #aaa;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            line-height: 1;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        input[type="number"]::-webkit-inner-spin-button { display: none; }
     </style>
 </head>
 <body>
+    <div id="root"></div>
 
-<div class="main-container">
-    <h1>LinTin 訂單管理</h1>
-    <button class="add-main-btn" onclick="openModal()">＋ 新增項目</button>
-</div>
+    <script type="text/babel">
+        // 模擬 Lucide 圖示 (因為原本的 import 在 HTML 不能直接用)
+        const Icon = ({ name }) => <span style={{fontSize: '18px'}}>{name === 'plus' ? '＋' : name === 'user' ? '👤' : '📦'}</span>;
 
-<div id="myModal" class="modal">
-    <div class="modal-content">
-        <span class="close-btn" onclick="closeModal()">&times;</span>
-        <h3 style="margin-top: 0;">新增資料</h3>
-        
-        <div class="form-group">
-            <label>項目名稱：</label>
-            <input type="text" id="itemName" placeholder="請輸入名稱">
-        </div>
+        const App = () => {
+            const [inviteCode, setInviteCode] = React.useState(localStorage.getItem('lintin_invite_code') || '');
+            const [tempCode, setTempCode] = React.useState('');
+            const [viewMode, setViewMode] = React.useState('purchase'); 
+            const [showModal, setShowModal] = React.useState(false);
+            const [items, setItems] = React.useState([]);
+            const [fundSettings, setFundSettings] = React.useState({ amount: '500000', currency: 'KRW' });
 
-        <div class="form-group">
-            <label>金額：</label>
-            <input type="number" id="itemPrice" placeholder="0">
-        </div>
+            const exchangeRates = { KRW: 0.024, JPY: 0.21, HKD: 4.1, THB: 0.9, AUD: 21.2, NTD: 1 };
+            const currencies = ['KRW', 'JPY', 'THB', 'HKD', 'AUD', 'NTD'];
+            const cuteEmojis = ['✨', '💖', '🧸', '🐰', '🍭', '🍓', '🐾', '🎀'];
 
-        <button class="confirm-btn" onclick="handleConfirm()">確認新增</button>
-    </div>
-</div>
+            const initialForm = { customerName: '', productName: '', price: '', fee: '', payer: '', currency: 'KRW', foreignPrice: '' };
+            const [formData, setFormData] = React.useState(initialForm);
 
-<script>
-    const modal = document.getElementById("myModal");
+            // --- 核心儲存功能 (修正黑色框框問題) ---
+            const saveItem = () => {
+                if (!formData.customerName || !formData.productName) {
+                    alert("請填寫必要資訊");
+                    return;
+                }
 
-    // 打開視窗
-    function openModal() {
-        modal.style.display = "block";
-    }
+                const newItem = {
+                    id: Date.now(),
+                    ...formData,
+                    emoji: cuteEmojis[Math.floor(Math.random() * cuteEmojis.length)],
+                    stage: viewMode,
+                    status: '預購中'
+                };
 
-    // 關閉視窗
-    function closeModal() {
-        modal.style.display = "none";
-    }
+                setItems([newItem, ...items]);
+                
+                // 這裡就是你說的：修正後的精簡提示
+                alert("新增成功"); 
 
-    // 點擊視窗外部也可以關閉
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            closeModal();
-        }
-    }
+                setShowModal(false);
+                setFormData(initialForm);
+            };
 
-    // 確認新增邏輯
-    function handleConfirm() {
-        const name = document.getElementById('itemName').value;
-        const price = document.getElementById('itemPrice').value;
+            const handleJoin = () => {
+                if (tempCode.length >= 2) {
+                    const code = tempCode.toUpperCase();
+                    setInviteCode(code);
+                    localStorage.setItem('lintin_invite_code', code);
+                }
+            };
 
-        if (!name || !price) {
-            alert("請完整填寫項目與金額");
-            return;
-        }
+            if (!inviteCode) {
+                return (
+                    <div className="min-h-screen bg-sky-50 flex items-center justify-center p-6">
+                        <div className="w-full max-w-sm bg-white rounded-[40px] p-10 shadow-xl text-center">
+                            <div className="w-20 h-20 bg-sky-500 rounded-3xl flex items-center justify-center text-white mx-auto mb-6 shadow-lg text-2xl">🛡️</div>
+                            <h1 className="text-2xl font-black text-sky-900 mb-2 italic">LinTin Login</h1>
+                            <input 
+                                type="text" placeholder="輸入邀請代碼" 
+                                className="w-full bg-slate-50 border-none rounded-2xl py-4 px-6 mb-6 font-black text-sky-600 outline-none"
+                                value={tempCode} onChange={(e) => setTempCode(e.target.value)}
+                            />
+                            <button onClick={handleJoin} className="w-full bg-sky-500 text-white py-4 rounded-2xl font-black shadow-lg">啟動系統</button>
+                        </div>
+                    </div>
+                );
+            }
 
-        // 執行動作
-        alert("新增成功");
+            return (
+                <div className="min-h-screen">
+                    <header className="bg-white/80 backdrop-blur-md border-b border-sky-50 px-5 pt-4 sticky top-0 z-30 shadow-sm">
+                        <div className="flex justify-between items-center mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="bg-sky-500 p-2 rounded-xl text-white"><Icon name="box" /></div>
+                                <div>
+                                    <h1 className="text-xl font-black text-sky-900 italic leading-none">LinTin</h1>
+                                    <p className="text-[10px] font-black text-slate-400 mt-1 uppercase">Channel: {inviteCode}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => { setFormData(initialForm); setShowModal(true); }} className="bg-sky-600 text-white p-2.5 rounded-xl shadow-lg active:scale-90 transition-all"><Icon name="plus" /></button>
+                        </div>
 
-        // 自動清空並關閉視窗
-        document.getElementById('itemName').value = "";
-        document.getElementById('itemPrice').value = "";
-        closeModal();
-    }
-</script>
+                        {/* 數據欄位 */}
+                        <div className="grid grid-cols-3 gap-3 mb-4">
+                            <div className="bg-white p-3 rounded-2xl border border-sky-100 shadow-sm">
+                                <p className="text-[9px] font-black text-slate-400 uppercase mb-1">購物金</p>
+                                <p className="text-sm font-black text-sky-600 truncate">{Number(fundSettings.amount).toLocaleString()} <span className="text-[8px]">{fundSettings.currency}</span></p>
+                            </div>
+                            <div className="bg-white p-3 rounded-2xl border border-sky-100 shadow-sm"><p className="text-[9px] font-black text-slate-400 mb-1 uppercase">待收帳款</p><p className="text-sm font-black text-amber-500">NT$ 0</p></div>
+                            <div className="bg-white p-3 rounded-2xl border border-sky-100 shadow-sm"><p className="text-[9px] font-black text-slate-400 mb-1 uppercase">累計利潤</p><p className="text-sm font-black text-emerald-500">NT$ 0</p></div>
+                        </div>
 
+                        <div className="flex">
+                            {['purchase', 'order'].map(m => (
+                                <button key={m} onClick={() => setViewMode(m)} className={`flex-1 pb-3 text-xs font-black transition-all relative ${viewMode === m ? 'text-sky-600' : 'text-slate-400'}`}>
+                                    {m === 'purchase' ? '採購清單' : '訂單管理'}
+                                    {viewMode === m && <div className="absolute bottom-0 left-0 right-0 h-1 bg-sky-500 rounded-t-full mx-8" />}
+                                </button>
+                            ))}
+                        </div>
+                    </header>
+
+                    {/* 列表內容 */}
+                    <div className="p-4 space-y-3">
+                        {items.filter(i => i.stage === viewMode).map(item => (
+                            <div key={item.id} className="bg-white rounded-3xl p-5 shadow-sm border border-slate-50 relative">
+                                <div className={`absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white ${item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-orange-400'}`}>{item.payer || '待定'}</div>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="bg-sky-50 p-2 rounded-xl text-sky-500"><Icon name="user" /></div>
+                                        <h3 className="text-sm font-black text-slate-800">{item.customerName} {item.emoji}</h3>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="font-black italic text-sky-700 text-sm">NT$ {Number(item.price).toLocaleString()}</div>
+                                    </div>
+                                </div>
+                                <div className="bg-slate-50 p-3 rounded-2xl mb-4 text-xs font-bold text-slate-500">{item.productName}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* 彈窗：新增/編輯 (精華 UI) */}
+                    {showModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+                            <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl animate-in zoom-in duration-200 overflow-y-auto max-h-[90vh]">
+                                <div className="flex justify-between items-center mb-8">
+                                    <h2 className="text-xl font-black italic text-sky-900">新增代購項目</h2>
+                                    <button onClick={() => setShowModal(false)} className="text-slate-300 text-2xl">&times;</button>
+                                </div>
+                                
+                                <div className="space-y-6">
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase mb-3 ml-1">採購執行者</p>
+                                        <div className="flex gap-2">
+                                            {['', '琳', '璇'].map(p => (
+                                                <button key={p} onClick={() => setFormData({...formData, payer: p})} className={`flex-1 py-4 rounded-2xl text-xs font-black transition-all ${formData.payer === p ? 'bg-slate-800 text-white shadow-lg' : 'bg-slate-50 text-slate-300'}`}>{p || '無'}</button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <p className="text-[9px] font-black text-slate-300 uppercase ml-1">客戶名稱 *</p>
+                                            <input className="w-full bg-slate-50 p-4 rounded-2xl outline-none font-bold text-sm" value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className="text-[9px] font-black text-slate-300 uppercase ml-1">商品名稱 *</p>
+                                            <input className="w-full bg-slate-50 p-4 rounded-2xl outline-none font-bold text-sm" value={formData.productName} onChange={e => setFormData({...formData, productName: e.target.value})} />
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-amber-50 p-5 rounded-3xl space-y-4">
+                                        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                                            {currencies.map(c => (
+                                                <button key={c} onClick={() => setFormData({...formData, currency: c})} className={`px-4 py-2 rounded-xl text-[10px] font-black flex-shrink-0 transition-all ${formData.currency === c ? 'bg-amber-500 text-white' : 'bg-white text-amber-300'}`}>{c}</button>
+                                            ))}
+                                        </div>
+                                        {formData.currency !== 'NTD' && (
+                                            <input type="number" placeholder="輸入當地幣別金額" className="w-full bg-white py-4 px-4 rounded-2xl outline-none font-black text-sm text-amber-600" value={formData.foreignPrice} onChange={e => {
+                                                const val = e.target.value;
+                                                const twd = Math.round(Number(val) * exchangeRates[formData.currency]);
+                                                setFormData({...formData, foreignPrice: val, price: twd.toString()});
+                                            }} />
+                                        )}
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <p className="text-[9px] font-black text-sky-400 uppercase ml-1">台幣成本</p>
+                                            <input type="number" className="w-full bg-sky-50 p-4 rounded-2xl outline-none font-black text-sm text-sky-600" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className="text-[9px] font-black text-emerald-400 uppercase ml-1">預期利潤</p>
+                                            <input type="number" className="w-full bg-emerald-50 p-4 rounded-2xl outline-none font-black text-sm text-emerald-600" value={formData.fee} onChange={e => setFormData({...formData, fee: e.target.value})} />
+                                        </div>
+                                    </div>
+
+                                    <button onClick={saveItem} className="w-full bg-sky-600 text-white py-5 rounded-3xl font-black shadow-xl active:scale-95 transition-all">確認新增</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
