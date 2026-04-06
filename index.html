@@ -1,91 +1,70 @@
-import React, { useState } from 'react';
-import { db } from './firebase'; // 請確保路徑正確
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>LinTin 系統 - 新增項目</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f4; }
+        .card { background: white; padding: 20px; border-radius: 8px; max-width: 400px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { 
+            width: 100%; padding: 10px; background: #000; color: white; border: none; 
+            border-radius: 4px; cursor: pointer; font-size: 16px; 
+        }
+        button:disabled { background: #666; }
+    </style>
+</head>
+<body>
 
-const AddItemForm = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    price: '',
-    quantity: '',
-    note: ''
-  });
-
-  const [loading, setLoading] = useState(false);
-
-  // 處理輸入變更
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  // 確認新增的邏輯
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      // 1. 寫入 Firebase
-      await addDoc(collection(db, "orders"), {
-        ...formData,
-        price: Number(formData.price), // 確保數字格式
-        quantity: Number(formData.quantity),
-        createdAt: serverTimestamp()
-      });
-
-      // 2. 這裡就是你說的「黑色框框」或提示邏輯
-      // 只顯示最精簡的文字，不夾帶任何變數
-      alert("新增成功"); 
-
-      // 3. 清空表單
-      setFormData({ name: '', price: '', quantity: '', note: '' });
-
-    } catch (error) {
-      console.error("Error adding document: ", error);
-      alert("新增失敗，請檢查網路連線");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div style={{ padding: '20px', maxWidth: '400px' }}>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '10px' }}>
-          <label>項目名稱：</label>
-          <input 
-            name="name" 
-            value={formData.name} 
-            onChange={handleChange} 
-            required 
-            style={{ width: '100%' }}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>金額：</label>
-          <input 
-            name="price" 
-            type="number"
-            value={formData.price} 
-            onChange={handleChange} 
-            required 
-            style={{ width: '100%' }}
-          />
-        </div>
-        <button 
-          type="submit" 
-          disabled={loading}
-          style={{ 
-            backgroundColor: '#000', 
-            color: '#fff', 
-            padding: '10px 20px', 
-            border: 'none', 
-            cursor: 'pointer' 
-          }}
-        >
-          {loading ? "處理中..." : "確認新增"}
-        </button>
-      </form>
+<div class="card">
+    <div class="input-group">
+        <label>項目名稱：</label>
+        <input type="text" id="itemName" placeholder="請輸入名稱">
     </div>
-  );
-};
+    <div class="input-group">
+        <label>金額：</label>
+        <input type="number" id="itemPrice" placeholder="0">
+    </div>
+    <button id="addBtn" onclick="handleSubmit()">確認新增</button>
+</div>
 
-export default AddItemForm;
+<script>
+    // 這裡處理點擊按鈕的邏輯
+    async function handleSubmit() {
+        const name = document.getElementById('itemName').value;
+        const price = document.getElementById('itemPrice').value;
+        const btn = document.getElementById('addBtn');
+
+        if (!name || !price) {
+            alert("請填寫完整資訊");
+            return;
+        }
+
+        // 開始處理
+        btn.disabled = true;
+        btn.innerText = "處理中...";
+
+        try {
+            // 模擬傳輸延遲，實際對接 Firebase 時會在這裡寫入資料
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            // 成功後的提示：最簡潔版本，沒有多餘文字
+            alert("新增成功");
+
+            // 清空輸入框
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemPrice').value = '';
+
+        } catch (error) {
+            alert("新增失敗");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "確認新增";
+        }
+    }
+</script>
+
+</body>
+</html>
