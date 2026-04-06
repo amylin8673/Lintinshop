@@ -3,65 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin | 專業代購系統</title>
+    <title>LinTin Pro | 專業代購管理</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .active-user-lin { background-color: #f0abfc; color: white; } /* 琳 - 粉紫色 */
+        .active-user-shuan { background-color: #bfdbfe; color: #1e40af; } /* 璇 - 淺藍色 */
+        .unselected { background-color: #f1f5f9; color: #94a3b8; }
+    </style>
 </head>
-<body class="bg-slate-50 font-sans pb-24">
-    <div class="max-w-md mx-auto p-4 space-y-6">
-        <div class="flex justify-between items-center py-2">
-            <div class="flex items-center gap-2">
-                <div class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
-                    <i class="fas fa-box text-white text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-black text-slate-800 leading-tight">LinTin</h1>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Channel: LinTin</p>
-                </div>
-            </div>
-            <button onclick="document.getElementById('modal').classList.remove('hidden')" class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 text-white">
-                <i class="fas fa-plus"></i>
-            </button>
-        </div>
-
-        <div class="grid grid-cols-3 gap-3 text-center">
-            <div class="bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-50">
-                <p class="text-[9px] font-bold text-slate-400 mb-1">購物金餘額</p>
-                <p class="text-sm font-black text-blue-500">0 <span class="text-[8px]">KRW</span></p>
-            </div>
-            <div class="bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-50">
-                <p class="text-[9px] font-bold text-slate-400 mb-1">待收帳款</p>
-                <p class="text-sm font-black text-orange-400">NT$ 0</p>
-            </div>
-            <div class="bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-50">
-                <p class="text-[9px] font-bold text-slate-400 mb-1">累計利潤</p>
-                <p class="text-sm font-black text-emerald-500">NT$ 0</p>
-            </div>
-        </div>
-
-        <div class="flex border-b border-slate-100">
-            <button class="flex-1 pb-3 text-sm font-black text-blue-500 border-b-2 border-blue-500">採購清單</button>
-            <button class="flex-1 pb-3 text-sm font-black text-slate-400">訂單管理</button>
-        </div>
-
-        <div class="relative">
-            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
-            <input type="text" placeholder="快速搜尋..." class="w-full bg-white border border-slate-100 py-3 pl-11 rounded-2xl text-sm font-medium outline-none">
-        </div>
-
-        <div id="list" class="py-20 text-center space-y-2">
-            <i class="fas fa-folder-open text-slate-100 text-5xl"></i>
-            <p class="text-xs font-bold text-slate-300 tracking-widest uppercase">目前沒有採購項目</p>
+<body class="bg-slate-100/50 font-sans">
+    <div class="max-w-md mx-auto p-4 opacity-50">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-black text-blue-600 italic">LinTin</h1>
+            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white"><i class="fas fa-plus"></i></div>
         </div>
     </div>
 
-    <div id="modal" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 hidden flex items-center justify-center p-6">
-        <div class="bg-white w-full rounded-[2rem] p-8 space-y-4 shadow-2xl">
-            <h2 class="font-black text-slate-800">新增代購項目</h2>
-            <input id="c" type="text" placeholder="客戶名稱" class="w-full bg-slate-50 p-4 rounded-xl outline-none text-sm font-bold">
-            <input id="p" type="text" placeholder="商品名稱" class="w-full bg-slate-50 p-4 rounded-xl outline-none text-sm font-bold">
-            <button onclick="alert('門面已修好！接下來我們來接通雲端。'); document.getElementById('modal').classList.add('hidden')" class="w-full bg-blue-500 text-white py-4 rounded-xl font-black">確認儲存</button>
-            <button onclick="document.getElementById('modal').classList.add('hidden')" class="w-full text-slate-300 text-xs font-bold">取消</button>
+    <div class="fixed inset-0 bg-slate-900/20 backdrop-blur-md flex items-center justify-center p-6 z-50">
+        <div class="bg-white w-full rounded-[2.5rem] p-8 shadow-2xl space-y-6 relative">
+            <button class="absolute right-6 top-6 text-slate-300"><i class="fas fa-times text-xl"></i></button>
+
+            <h2 class="text-center text-lg font-black text-slate-700">新增代購</h2>
+
+            <div class="space-y-5">
+                <div>
+                    <label class="text-xs font-bold text-slate-400 mb-2 block">代墊人</label>
+                    <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
+                        <button class="flex-1 py-2 text-xs font-bold rounded-lg unselected">無</button>
+                        <button class="flex-1 py-2 text-xs font-bold rounded-lg active-user-lin shadow-sm">琳</button>
+                        <button class="flex-1 py-2 text-xs font-bold rounded-lg unselected">璇</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 mb-2 block">買家名稱</label>
+                        <input type="text" placeholder="輸入名稱" class="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 ring-blue-100">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 mb-2 block">商品名稱</label>
+                        <input type="text" placeholder="輸入商品" class="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 ring-blue-100">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-slate-400 mb-2 block">外幣金額</label>
+                    <div class="relative">
+                        <select class="absolute left-3 top-1/2 -translate-y-1/2 bg-transparent text-blue-500 font-black text-xs outline-none">
+                            <option>KRW</option>
+                            <option>JPY</option>
+                        </select>
+                        <input type="number" value="0" class="w-full bg-slate-50 border border-slate-100 py-4 pl-16 pr-4 rounded-2xl text-sm font-bold outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 mb-2 block">台幣價格</label>
+                        <input type="number" placeholder="自動計算" class="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl text-sm font-bold outline-none">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 mb-2 block">代購費 (潤)</label>
+                        <input type="number" placeholder="利潤" class="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl text-sm font-bold outline-none">
+                    </div>
+                </div>
+
+                <button class="w-full bg-sky-300 text-white py-4 rounded-2xl font-black text-lg shadow-lg shadow-sky-100 active:scale-95 transition-all">
+                    新增項目
+                </button>
+            </div>
         </div>
     </div>
 </body>
