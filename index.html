@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v5.6</title>
+    <title>LinTin 協作系統 v5.7</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -202,27 +202,30 @@
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 mb-4 text-center">
-                            <div className="col-span-1 bg-white p-2 rounded-2xl border border-sky-100 shadow-sm overflow-hidden">
+                            {/* 購物金餘額 - 置中優化 */}
+                            <div className="bg-white p-2.5 rounded-2xl border border-sky-100 shadow-sm flex flex-col items-center justify-center">
                                 <p className="text-[8px] font-black text-slate-400 uppercase mb-1">購物金餘額</p>
-                                <div className="flex items-center gap-1 font-mono justify-center px-1">
+                                <div className="flex items-center justify-center gap-0.5 w-full">
                                     <input 
                                         type="number" 
-                                        className="w-full text-[11px] font-black text-sky-600 bg-transparent outline-none text-center" 
+                                        className="w-16 text-[11px] font-black text-sky-600 bg-transparent outline-none text-center font-mono" 
                                         value={Math.round(fundSettings.amount)} 
                                         onChange={(e) => setFundSettings({...fundSettings, amount: e.target.value})} 
                                     />
-                                    <select className="text-[9px] font-black text-sky-400 bg-sky-50 px-1 rounded outline-none flex-shrink-0" value={fundSettings.currency} onChange={(e) => setFundSettings({ ...fundSettings, currency: e.target.value })}>
+                                    <select className="text-[8px] font-black text-sky-400 bg-sky-50 px-0.5 rounded outline-none" value={fundSettings.currency} onChange={(e) => setFundSettings({ ...fundSettings, currency: e.target.value })}>
                                         {currencies.map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
                                 </div>
                             </div>
-                            <div className="bg-white p-2 rounded-2xl border border-sky-100 shadow-sm">
-                                <p className="text-[8px] font-black text-slate-400 mb-1 uppercase">待收帳款</p>
-                                <p className="text-[11px] font-black text-amber-500 italic truncate font-mono">NT$ {pendingFinance.toLocaleString()}</p>
+                            {/* 待收帳款 - 置中優化 */}
+                            <div className="bg-white p-2.5 rounded-2xl border border-sky-100 shadow-sm flex flex-col items-center justify-center">
+                                <p className="text-[8px] font-black text-slate-400 mb-1 uppercase text-center w-full">待收帳款</p>
+                                <p className="text-[11px] font-black text-amber-500 italic truncate font-mono text-center w-full">NT$ {pendingFinance.toLocaleString()}</p>
                             </div>
-                            <div className="bg-white p-2 rounded-2xl border border-sky-100 shadow-sm">
-                                <p className="text-[8px] font-black text-slate-400 mb-1 uppercase">累積利潤</p>
-                                <p className="text-[11px] font-black text-emerald-500 italic truncate font-mono">NT$ {totalProfit.toLocaleString()}</p>
+                            {/* 累積利潤 - 置中優化 */}
+                            <div className="bg-white p-2.5 rounded-2xl border border-sky-100 shadow-sm flex flex-col items-center justify-center">
+                                <p className="text-[8px] font-black text-slate-400 mb-1 uppercase text-center w-full">累積利潤</p>
+                                <p className="text-[11px] font-black text-emerald-500 italic truncate font-mono text-center w-full">NT$ {totalProfit.toLocaleString()}</p>
                             </div>
                         </div>
 
@@ -253,7 +256,6 @@
                     </header>
 
                     <div className="p-4 space-y-4">
-                        {/* 採購清單內容同前 */}
                         {viewMode === 'purchase' && items.filter(i => i.stage === 'purchase').filter(i => i.customerName.includes(searchQuery) || i.productName.includes(searchQuery)).map(item => (
                             <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative overflow-hidden">
                                 <div className={`absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white rounded-bl-xl ${getPayerColor(item.payer)}`}>{item.payer}</div>
@@ -277,7 +279,6 @@
                             </div>
                         ))}
 
-                        {/* 訂單管理內容同前 */}
                         {viewMode === 'order' && groupedOrders
                             .filter(group => orderFilter === '全部' || group.items.some(i => i.status === orderFilter))
                             .filter(group => group.customerName.includes(searchQuery) || group.items.some(i => i.productName.includes(searchQuery)))
@@ -285,7 +286,6 @@
                                 const totalGroupPrice = group.items.reduce((sum, i) => sum + Number(i.price || 0), 0);
                                 const totalGroupFee = group.items.reduce((sum, i) => sum + Number(i.fee || 0), 0);
                                 const currentStatus = group.items[0].status;
-
                                 return (
                                     <div key={group.customerName} className="bg-white rounded-[32px] shadow-sm border border-slate-100 overflow-hidden">
                                         <div className="p-5 pb-3 flex justify-between items-start bg-slate-50/50">
@@ -334,7 +334,7 @@
                         }
                     </div>
 
-                    {/* Modal 同前 */}
+                    {/* Modal 等其餘組件同前 */}
                     {showModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 text-left">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
