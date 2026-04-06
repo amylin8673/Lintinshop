@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v2.1</title>
+    <title>LinTin 協作系統 v2.2</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -12,6 +12,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body>
@@ -19,8 +20,8 @@
 
     <script type="text/babel">
         const Icon = ({ name }) => {
-            const icons = { plus: '＋', user: '👤', box: '📦', refresh: '🔄' };
-            return <span style={{fontSize: '14px'}}>{icons[name]}</span>;
+            const icons = { plus: '＋', user: '👤', box: '📦', refresh: '🔄', edit: '✏️' };
+            return <span style={{fontSize: '12px'}}>{icons[name]}</span>;
         };
 
         const App = () => {
@@ -30,8 +31,9 @@
             const [showModal, setShowModal] = React.useState(false);
             const [items, setItems] = React.useState([]);
             
-            // 購物金狀態
+            // 購物金狀態：增加一個「是否正在編輯」的狀態
             const [fundSettings, setFundSettings] = React.useState({ amount: 1000000, currency: 'KRW' });
+            const [isEditingFund, setIsEditingFund] = React.useState(false);
 
             const exchangeRates = { KRW: 0.024, JPY: 0.21, HKD: 4.1, THB: 0.9, AUD: 21.2, NTD: 1 };
             const currencies = ['KRW', 'JPY', 'THB', 'HKD', 'AUD', 'NTD'];
@@ -39,40 +41,22 @@
             const initialForm = { customerName: '', productName: '', price: '', fee: '', payer: '琳', currency: 'KRW', foreignPrice: '' };
             const [formData, setFormData] = React.useState(initialForm);
 
-            // --- 核心功能：切換購物金幣別 ---
+            // 切換幣別邏輯
             const toggleFundCurrency = (e) => {
                 e.stopPropagation();
                 const currentIndex = currencies.indexOf(fundSettings.currency);
-                const nextIndex = (currentIndex + 1) % currencies.length;
-                const nextCurrency = currencies[nextIndex];
-                
-                // 計算邏輯：先換回台幣，再換成目標幣別
+                const nextCurrency = currencies[(currentIndex + 1) % currencies.length];
                 const amountInTWD = fundSettings.amount * exchangeRates[fundSettings.currency];
                 const nextAmount = Math.round(amountInTWD / exchangeRates[nextCurrency]);
-
-                setFundSettings({
-                    amount: nextAmount,
-                    currency: nextCurrency
-                });
+                setFundSettings({ amount: nextAmount, currency: nextCurrency });
             };
 
             const saveItem = () => {
-                if (!formData.customerName || !formData.productName) {
-                    alert("請填寫必要資訊");
-                    return;
-                }
-                const newItem = { id: Date.now(), ...formData, stage: viewMode, status: '預購中' };
-                setItems([newItem, ...items]);
+                if (!formData.customerName || !formData.productName) { alert("請填寫必要資訊"); return; }
+                setItems([{ id: Date.now(), ...formData, stage: viewMode, status: '預購中' }, ...items]);
                 alert("新增成功"); 
                 setShowModal(false);
                 setFormData(initialForm);
-            };
-
-            const handleJoin = () => {
-                if (tempCode.length >= 2) {
-                    setInviteCode(tempCode.toUpperCase());
-                    localStorage.setItem('lintin_invite_code', tempCode.toUpperCase());
-                }
             };
 
             if (!inviteCode) {
@@ -80,12 +64,8 @@
                     <div className="min-h-screen bg-sky-50 flex items-center justify-center p-6">
                         <div className="w-full max-w-sm bg-white rounded-[40px] p-10 shadow-xl text-center">
                             <h1 className="text-2xl font-black text-sky-900 mb-6 italic">LinTin Login</h1>
-                            <input 
-                                type="text" placeholder="輸入代碼" 
-                                className="w-full bg-slate-50 rounded-2xl py-4 px-6 mb-4 font-black text-sky-600 outline-none"
-                                value={tempCode} onChange={(e) => setTempCode(e.target.value)}
-                            />
-                            <button onClick={handleJoin} className="w-full bg-sky-500 text-white py-4 rounded-2xl font-black shadow-lg">進入系統</button>
+                            <input type="text" placeholder="代碼" className="w-full bg-slate-50 rounded-2xl py-4 px-6 mb-4 font-black text-sky-600 outline-none" value={tempCode} onChange={(e) => setTempCode(e.target.value)} />
+                            <button onClick={() => { setInviteCode(tempCode.toUpperCase()); localStorage.setItem('lintin_invite_code', tempCode.toUpperCase()); }} className="w-full bg-sky-500 text-white py-4 rounded-2xl font-black shadow-lg">進入系統</button>
                         </div>
                     </div>
                 );
@@ -102,28 +82,41 @@
                             <button onClick={() => setShowModal(true)} className="bg-sky-600 text-white p-2.5 rounded-xl shadow-lg">＋</button>
                         </div>
 
-                        {/* 數據欄位：這裡修正了點擊切換功能 */}
+                        {/* 數據欄位：修正為可點擊編輯 */}
                         <div className="grid grid-cols-3 gap-3 mb-4">
                             <div 
-                                className="bg-white p-3 rounded-2xl border border-sky-100 shadow-sm cursor-pointer active:bg-sky-50 transition-colors"
-                                onClick={toggleFundCurrency}
+                                className="bg-white p-3 rounded-2xl border border-sky-100 shadow-sm relative"
+                                onClick={() => setIsEditingFund(true)}
                             >
                                 <div className="flex justify-between items-center mb-1">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase">購物金</p>
-                                    <div className="text-sky-400"><Icon name="refresh" /></div>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase">購物金餘額</p>
+                                    <button onClick={toggleFundCurrency} className="text-sky-300 hover:text-sky-500"><Icon name="refresh" /></button>
                                 </div>
-                                <p className="text-sm font-black text-sky-600 truncate">
-                                    {fundSettings.amount.toLocaleString()} 
-                                    <span className="text-[8px] ml-0.5 opacity-60">{fundSettings.currency}</span>
-                                </p>
+                                
+                                {isEditingFund ? (
+                                    <input 
+                                        autoFocus
+                                        type="number"
+                                        className="w-full text-sm font-black text-sky-600 bg-sky-50 rounded px-1 outline-none"
+                                        value={fundSettings.amount}
+                                        onChange={(e) => setFundSettings({...fundSettings, amount: e.target.value})}
+                                        onBlur={() => setIsEditingFund(false)}
+                                        onKeyDown={(e) => e.key === 'Enter' && setIsEditingFund(false)}
+                                    />
+                                ) : (
+                                    <p className="text-sm font-black text-sky-600 truncate flex items-center gap-1">
+                                        {Number(fundSettings.amount).toLocaleString()}
+                                        <span className="text-[8px] opacity-60 font-medium">{fundSettings.currency}</span>
+                                    </p>
+                                )}
                             </div>
-                            <div className="bg-white p-3 rounded-2xl border border-sky-100 shadow-sm"><p className="text-[9px] font-black text-slate-400 mb-1 uppercase">待收帳款</p><p className="text-sm font-black text-amber-500">NT$ 0</p></div>
-                            <div className="bg-white p-3 rounded-2xl border border-sky-100 shadow-sm"><p className="text-[9px] font-black text-slate-400 mb-1 uppercase">累計利潤</p><p className="text-sm font-black text-emerald-500">NT$ 0</p></div>
+                            <div className="bg-white p-3 rounded-2xl border border-sky-100 shadow-sm"><p className="text-[9px] font-black text-slate-400 mb-1 uppercase">待收帳款</p><p className="text-sm font-black text-amber-500 italic">NT$ 0</p></div>
+                            <div className="bg-white p-3 rounded-2xl border border-sky-100 shadow-sm"><p className="text-[9px] font-black text-slate-400 mb-1 uppercase">累積利潤</p><p className="text-sm font-black text-emerald-500 italic">NT$ 0</p></div>
                         </div>
 
                         <div className="flex">
                             {['purchase', 'order'].map(m => (
-                                <button key={m} onClick={() => setViewMode(m)} className={`flex-1 pb-3 text-xs font-black relative ${viewMode === m ? 'text-sky-600' : 'text-slate-400'}`}>
+                                <button key={m} onClick={() => setViewMode(m)} className={`flex-1 pb-3 text-xs font-black transition-all relative ${viewMode === m ? 'text-sky-600' : 'text-slate-400'}`}>
                                     {m === 'purchase' ? '採購清單' : '訂單管理'}
                                     {viewMode === m && <div className="absolute bottom-0 left-0 right-0 h-1 bg-sky-500 rounded-t-full mx-8" />}
                                 </button>
@@ -136,14 +129,14 @@
                         {items.filter(i => i.stage === viewMode).map(item => (
                             <div key={item.id} className="bg-white rounded-3xl p-5 shadow-sm border border-slate-50 relative">
                                 <div className="absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white bg-fuchsia-400 rounded-bl-xl">{item.payer}</div>
-                                <h3 className="text-sm font-black text-slate-800 mb-1">{item.customerName}</h3>
-                                <p className="text-xs text-slate-500 bg-slate-50 p-2 rounded-xl mt-2">{item.productName}</p>
+                                <h3 className="text-sm font-black text-slate-800">{item.customerName} ✨</h3>
+                                <p className="text-xs text-slate-400 mt-1">{item.productName}</p>
                                 <div className="mt-3 text-right font-black text-sky-700">NT$ {Number(item.price).toLocaleString()}</div>
                             </div>
                         ))}
                     </div>
 
-                    {/* 彈窗 */}
+                    {/* 彈窗：新增項目 */}
                     {showModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
