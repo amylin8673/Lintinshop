@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v2.7</title>
+    <title>LinTin 協作系統 v2.8</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -22,7 +22,7 @@
 
     <script type="text/babel">
         const Icon = ({ name }) => {
-            const icons = { box: '📦', down: '▼' };
+            const icons = { box: '📦', down: '▼', edit: '✏️', trash: '🗑️' };
             return <span style={{fontSize: '12px'}}>{icons[name]}</span>;
         };
 
@@ -31,6 +31,7 @@
             const [tempCode, setTempCode] = React.useState('');
             const [viewMode, setViewMode] = React.useState('purchase'); 
             const [showModal, setShowModal] = React.useState(false);
+            const [isEditing, setIsEditing] = React.useState(null); // 紀錄正在編輯的 ID
             const [items, setItems] = React.useState([]);
             
             const [fundSettings, setFundSettings] = React.useState({ amount: 1000000, currency: 'KRW' });
@@ -40,12 +41,33 @@
             const initialForm = { customerName: '', productName: '', price: '', fee: '', payer: '', currency: 'KRW', foreignPrice: '' };
             const [formData, setFormData] = React.useState(initialForm);
 
+            // 新增或儲存編輯
             const saveItem = () => {
                 if (!formData.customerName || !formData.productName) { alert("請填寫必要資訊"); return; }
-                setItems([{ id: Date.now(), ...formData, stage: 'purchase' }, ...items]);
-                alert("新增成功"); 
+                
+                if (isEditing) {
+                    setItems(items.map(item => item.id === isEditing ? { ...formData, id: isEditing, stage: item.stage } : item));
+                    setIsEditing(null);
+                } else {
+                    setItems([{ id: Date.now(), ...formData, stage: 'purchase' }, ...items]);
+                }
+                
                 setShowModal(false);
                 setFormData(initialForm);
+            };
+
+            // 刪除功能
+            const deleteItem = (id) => {
+                if (confirm("確定要刪除這個項目嗎？")) {
+                    setItems(items.filter(item => item.id !== id));
+                }
+            };
+
+            // 開啟編輯彈窗
+            const openEdit = (item) => {
+                setFormData(item);
+                setIsEditing(item.id);
+                setShowModal(true);
             };
 
             const markAsBought = (id) => {
@@ -59,7 +81,7 @@
                         <div className="w-full max-w-sm bg-white rounded-[40px] p-10 shadow-xl text-center">
                             <h1 className="text-2xl font-black text-sky-900 mb-6 italic">LinTin Login</h1>
                             <input type="text" placeholder="代碼" className="w-full bg-slate-50 rounded-2xl py-4 px-6 mb-4 font-black text-sky-600 outline-none" value={tempCode} onChange={(e) => setTempCode(e.target.value)} />
-                            <button onClick={() => { setInviteCode(tempCode.toUpperCase()); localStorage.setItem('lintin_invite_code', tempCode.toUpperCase()); }} className="w-full bg-sky-500 text-white py-4 rounded-2xl font-black shadow-lg active-scale">進入系統</button>
+                            <button onClick={() => { setInviteCode(tempCode.toUpperCase()); localStorage.setItem('lintin_invite_code', tempCode.toUpperCase()); }} className="w-full bg-sky-500 text-white py-4 rounded-2xl font-black shadow-lg">進入系統</button>
                         </div>
                     </div>
                 );
@@ -73,7 +95,7 @@
                                 <div className="bg-sky-500 p-2 rounded-xl text-white"><Icon name="box" /></div>
                                 <h1 className="text-xl font-black text-sky-900 italic leading-none">LinTin</h1>
                             </div>
-                            <button onClick={() => setShowModal(true)} className="bg-sky-600 text-white p-2.5 rounded-xl shadow-lg active-scale transition-all">＋</button>
+                            <button onClick={() => { setIsEditing(null); setFormData(initialForm); setShowModal(true); }} className="bg-sky-600 text-white p-2.5 rounded-xl shadow-lg active-scale transition-all">＋</button>
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 mb-4">
@@ -105,13 +127,19 @@
 
                     <div className="p-4 space-y-3">
                         {items.filter(i => i.stage === viewMode).map(item => (
-                            <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative">
-                                {item.payer && (
-                                    <div className={`absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white rounded-bl-xl ${item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-orange-400'}`}>
-                                        {item.payer}
-                                    </div>
-                                )}
-                                <div className="flex justify-between items-start">
+                            <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative overflow-hidden">
+                                {/* 代墊人與功能按鈕 */}
+                                <div className="absolute top-0 right-0 flex items-center">
+                                    <button onClick={() => openEdit(item)} className="p-2 text-slate-300 hover:text-sky-500 transition-colors"><Icon name="edit" /></button>
+                                    <button onClick={() => deleteItem(item.id)} className="p-2 text-slate-300 hover:text-red-400 transition-colors mr-1"><Icon name="trash" /></button>
+                                    {item.payer && (
+                                        <div className={`px-4 py-1 text-[9px] font-black text-white rounded-bl-xl ${item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-orange-400'}`}>
+                                            {item.payer}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex justify-between items-start mt-2">
                                     <div className="flex-1 pr-4">
                                         <h3 className="text-sm font-black text-slate-800">{item.customerName} ✨</h3>
                                         <p className="text-xs text-slate-400 mt-1">{item.productName}</p>
@@ -135,10 +163,10 @@
                     </div>
 
                     {showModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 text-left">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
                                 <div className="flex justify-between items-center mb-8">
-                                    <h2 className="text-xl font-black italic text-sky-900">新增項目</h2>
+                                    <h2 className="text-xl font-black italic text-sky-900">{isEditing ? '編輯項目' : '新增項目'}</h2>
                                     <button onClick={() => setShowModal(false)} className="text-slate-300 text-2xl">&times;</button>
                                 </div>
                                 <div className="space-y-6">
@@ -154,12 +182,12 @@
                                         <input placeholder="客戶名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none" value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} />
                                         <input placeholder="商品名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none" value={formData.productName} onChange={e => setFormData({...formData, productName: e.target.value})} />
                                     </div>
-                                    <div className="bg-amber-50 p-5 rounded-3xl space-y-4">
-                                        <select className="w-full bg-white p-3 rounded-xl text-xs font-black text-amber-600 outline-none border border-amber-100 cursor-pointer" value={formData.currency} onChange={(e) => setFormData({...formData, currency: e.target.value, foreignPrice: ''})}>
+                                    <div className="bg-amber-50 p-5 rounded-3xl space-y-4 shadow-inner">
+                                        <select className="w-full bg-white p-3 rounded-xl text-xs font-black text-amber-600 outline-none border border-amber-100" value={formData.currency} onChange={(e) => setFormData({...formData, currency: e.target.value, foreignPrice: ''})}>
                                             {currencies.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
                                         {formData.currency !== 'NTD' && (
-                                            <input type="number" placeholder="輸入外幣金額" className="w-full bg-white py-4 px-4 rounded-2xl outline-none font-black text-sm text-amber-600" value={formData.foreignPrice} onChange={e => {
+                                            <input type="number" placeholder="外幣金額" className="w-full bg-white py-4 px-4 rounded-2xl outline-none font-black text-sm text-amber-600" value={formData.foreignPrice} onChange={e => {
                                                 const val = e.target.value;
                                                 const twd = Math.round(Number(val) * exchangeRates[formData.currency]);
                                                 setFormData({...formData, foreignPrice: val, price: twd.toString()});
@@ -170,7 +198,9 @@
                                         <input type="number" placeholder="台幣成本" className="w-full bg-sky-50 p-4 rounded-2xl font-black text-sm text-sky-600 outline-none" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
                                         <input type="number" placeholder="預期利潤" className="w-full bg-emerald-50 p-4 rounded-2xl font-black text-sm text-emerald-600 outline-none" value={formData.fee} onChange={e => setFormData({...formData, fee: e.target.value})} />
                                     </div>
-                                    <button onClick={saveItem} className="w-full bg-sky-600 text-white py-5 rounded-3xl font-black shadow-xl active-scale transition-all">確認新增</button>
+                                    <button onClick={saveItem} className="w-full bg-sky-600 text-white py-5 rounded-3xl font-black shadow-xl active-scale">
+                                        {isEditing ? '儲存修改' : '確認新增'}
+                                    </button>
                                 </div>
                             </div>
                         </div>
