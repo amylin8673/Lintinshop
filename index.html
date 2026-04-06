@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v8.3</title>
+    <title>LinTin 協作系統 v8.4</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -14,6 +14,7 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .active-scale:active { transform: scale(0.95); }
         input { user-select: text; }
+        select { -webkit-appearance: none; } /* 讓 iPad 上的 select 樣式更統一 */
     </style>
 </head>
 <body>
@@ -51,7 +52,7 @@
 
             const [creditData, setCreditData] = React.useState(() => JSON.parse(localStorage.getItem('lintin_credit')) || { ntdAmount: 0, currency: 'KRW', foreignAmount: 0 });
 
-            const initialForm = { customerName: '', productName: '', price: '', fee: '', payer: '無', currency: 'KRW', foreignPrice: '', category: '預設', orderStatus: '待付款', accountDigits: '' };
+            const initialForm = { customerName: '', productName: '', price: '', fee: '', payer: '無', currency: 'KRW', foreignPrice: '', category: categories[0], orderStatus: '待付款', accountDigits: '' };
             const [formData, setFormData] = React.useState(initialForm);
 
             const stats = React.useMemo(() => {
@@ -76,7 +77,7 @@
             const getPayerColor = (payer) => {
                 if (payer === '璇') return 'bg-sky-400';
                 if (payer === '琳') return 'bg-fuchsia-400';
-                return 'bg-slate-400'; // 「無」的顏色
+                return 'bg-slate-400';
             };
 
             return (
@@ -88,14 +89,18 @@
                                     <div className="bg-sky-500 p-2.5 rounded-xl text-white shadow-md"><Icon name="box" /></div>
                                     <h1 className="text-xl font-black text-sky-900 italic">LinTin</h1>
                                 </div>
-                                <button onClick={() => { setIsEditing(null); setFormData({ ...initialForm, category: categories[0] }); setShowModal(true); }} className="bg-sky-600 text-white p-2.5 rounded-xl shadow-lg active-scale">＋</button>
+                                <button onClick={() => { 
+                                    setIsEditing(null); 
+                                    setFormData({ ...initialForm, category: categories[0] }); 
+                                    setShowModal(true); 
+                                }} className="bg-sky-600 text-white p-2.5 rounded-xl shadow-lg active-scale">＋</button>
                             </div>
 
                             <div className="grid grid-cols-3 gap-3 mb-5">
                                 <div onClick={() => setShowCreditModal(true)} className="bg-slate-50 p-3 rounded-2xl border border-slate-100 active-scale cursor-pointer">
                                     <p className="text-[9px] font-black text-slate-400 uppercase mb-1">共同基金 ✎</p>
-                                    <p className="text-[10px] font-black text-amber-600 truncate">{Number(creditData.foreignAmount).toLocaleString()} {creditData.currency}</p>
-                                    <p className="text-[10px] font-black text-slate-700 truncate">NT$ {Number(creditData.ntdAmount).toLocaleString()}</p>
+                                    <p className="text-[10px] font-black text-amber-600 truncate leading-tight">{Number(creditData.foreignAmount).toLocaleString()} {creditData.currency}</p>
+                                    <p className="text-[10px] font-black text-slate-700 truncate leading-tight">NT$ {Number(creditData.ntdAmount).toLocaleString()}</p>
                                 </div>
                                 <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100">
                                     <p className="text-[9px] font-black text-amber-600/70 uppercase mb-1">待收訂單</p>
@@ -172,6 +177,7 @@
                         ))}
                     </div>
 
+                    {/* Modal: 新增/編輯項目 - 修正分類標籤選單 */}
                     {showModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 text-left">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh] no-scrollbar">
@@ -179,7 +185,16 @@
                                 <div className="space-y-5">
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-1.5"><p className="text-[10px] font-black text-slate-400 px-1">分類標籤</p>
-                                            <select className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none appearance-none" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>{categories.map(c => <option key={c} value={c}>{c}</option>)}</select>
+                                            <div className="relative">
+                                                <select className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none border-2 border-transparent focus:border-sky-100" 
+                                                    value={formData.category} 
+                                                    onChange={e => setFormData({...formData, category: e.target.value})}
+                                                >
+                                                    {/* 這裡會動態抓取所有自定義標籤 */}
+                                                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                                </select>
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300 text-[10px]">▼</div>
+                                            </div>
                                         </div>
                                         <div className="space-y-1.5"><p className="text-[10px] font-black text-slate-400 px-1">代墊人</p>
                                             <div className="flex gap-2 h-[52px]">
@@ -213,7 +228,7 @@
                         </div>
                     )}
                     
-                    {/* 其他 Modal 邏輯不變 */}
+                    {/* 其他功能邏輯不變 */}
                     {showCreditModal && (
                         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-6 text-left">
                             <div className="bg-white w-full max-w-xs rounded-[32px] p-8 shadow-2xl">
@@ -238,8 +253,8 @@
                             <div className="bg-white w-full max-w-sm rounded-[40px] p-8 shadow-2xl">
                                 <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black text-sky-900 italic">管理採購標籤</h2><button onClick={() => setShowTagModal(false)} className="text-slate-300 text-3xl leading-none">&times;</button></div>
                                 <div className="flex gap-2 mb-6">
-                                    <input placeholder="新標籤" className="flex-1 bg-slate-50 py-3 px-4 rounded-xl font-bold outline-none" value={newTagName} onChange={e => setNewTagName(e.target.value)} />
-                                    <button onClick={() => { if(newTagName && !categories.includes(newTagName)) { setCategories([...categories, newTagName]); setNewTagName(''); } }} className="bg-sky-500 text-white px-4 rounded-xl font-black shadow-md">新增</button>
+                                    <input placeholder="新標籤" className="flex-1 bg-slate-50 py-3 px-4 rounded-xl font-bold outline-none border-2 border-transparent focus:border-sky-100" value={lastFive} onChange={e => setLastFive(e.target.value)} />
+                                    <button onClick={() => { if(lastFive && !categories.includes(lastFive)) { setCategories([...categories, lastFive]); setLastFive(''); } }} className="bg-sky-500 text-white px-4 rounded-xl font-black shadow-md">新增</button>
                                 </div>
                                 <div className="space-y-2 max-h-48 overflow-y-auto no-scrollbar">
                                     {categories.map(tag => (
