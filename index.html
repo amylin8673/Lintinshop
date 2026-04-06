@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 v11.0</title>
+    <title>LinTin 系統 v12.0</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -33,11 +33,10 @@
         };
 
         const App = () => {
-            // 狀態初始化
+            // 基礎資料
             const [items, setItems] = useState(() => JSON.parse(localStorage.getItem('lt_items')) || []);
-            // 分離兩組標籤
             const [pCats, setPCats] = useState(() => JSON.parse(localStorage.getItem('lt_p_cats')) || ['預設', '服飾']);
-            const [oCats, setOCats] = useState(() => JSON.parse(localStorage.getItem('lt_o_cats')) || ['預設', '待寄出']);
+            const orderStatuses = ['待付款', '已匯款', '待查帳', '已出貨', '完成'];
             
             const [credit, setCredit] = useState(() => JSON.parse(localStorage.getItem('lt_credit')) || { ntd: 0, foreign: 0, cur: 'KRW' });
             const [rates, setRates] = useState({ KRW: 0.024, JPY: 0.21, THB: 0.9, HKD: 4.1, AUD: 21.2, NTD: 1 });
@@ -49,7 +48,7 @@
             const [showModal, setShowModal] = useState(false);
             const [isEditing, setIsEditing] = useState(null);
 
-            const initialForm = { customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設' };
+            const initialForm = { customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款' };
             const [form, setForm] = useState(initialForm);
 
             // 1. 抓取匯率
@@ -62,26 +61,23 @@
                             const r = data.rates;
                             setRates({ NTD: 1, KRW: 1/r.KRW, JPY: 1/r.JPY, THB: 1/r.THB, HKD: 1/r.HKD, AUD: 1/r.AUD });
                         }
-                    } catch (e) { console.warn("使用預設匯率"); }
+                    } catch (e) { console.warn("使用備援匯率"); }
                 };
                 getRates();
             }, []);
 
-            // 2. 資料同步
+            // 2. 持久化存儲
             useEffect(() => {
                 localStorage.setItem('lt_items', JSON.stringify(items));
                 localStorage.setItem('lt_p_cats', JSON.stringify(pCats));
-                localStorage.setItem('lt_o_cats', JSON.stringify(oCats));
                 localStorage.setItem('lt_credit', JSON.stringify(credit));
-            }, [items, pCats, oCats, credit]);
+            }, [items, pCats, credit]);
 
             // 3. 儲存邏輯
             const handleSave = () => {
-                if (!form.cat) return alert("請輸入分類");
-                
-                // 根據當前模式存入對應標籤庫
-                if (viewMode === 'purchase' && !pCats.includes(form.cat)) setPCats([...pCats, form.cat]);
-                if (viewMode === 'order' && !oCats.includes(form.cat)) setOCats([...oCats, form.cat]);
+                if (viewMode === 'purchase' && form.cat && !pCats.includes(form.cat)) {
+                    setPCats([...pCats, form.cat]);
+                }
 
                 if (isEditing) {
                     setItems(items.map(i => i.id === isEditing ? { ...form, id: isEditing } : i));
@@ -93,13 +89,8 @@
 
             const stats = useMemo(() => ({
                 profit: items.reduce((s, i) => s + Number(i.fee || 0), 0),
-                pending: items.filter(i => i.stage === 'order').reduce((s, i) => s + Number(i.price || 0), 0)
+                pending: items.filter(i => i.stage === 'order' && i.orderStatus !== '完成').reduce((s, i) => s + Number(i.price || 0), 0)
             }), [items]);
-
-            // 當前顯示的標籤組
-            const currentCats = viewMode === 'purchase' ? pCats : oCats;
-            const currentActiveCat = viewMode === 'purchase' ? activePCat : activeOCat;
-            const setCurrentActiveCat = viewMode === 'purchase' ? setActivePCat : setActiveOCat;
 
             return (
                 <div className="min-h-screen pb-10 text-slate-900 bg-[#F8FAFC]">
@@ -107,26 +98,26 @@
                         <div className="flex justify-between items-center mb-5">
                             <div className="flex items-center gap-2">
                                 <div className="bg-sky-600 p-2.5 rounded-xl text-white shadow-lg"><Icon name="box" /></div>
-                                <h1 className="text-2xl font-black text-sky-900 italic tracking-tight">LinTin</h1>
+                                <h1 className="text-2xl font-black text-sky-900 italic tracking-tight leading-none">LinTin</h1>
                             </div>
-                            <button onClick={() => { setForm({ ...initialForm, cat: currentCats[0] }); setIsEditing(null); setShowModal(true); }} className="bg-sky-600 text-white p-3 rounded-2xl shadow-xl active-scale">
+                            <button onClick={() => { setForm(initialForm); setIsEditing(null); setShowModal(true); }} className="bg-sky-600 text-white p-3 rounded-2xl shadow-xl active-scale">
                                 <Icon name="plus" className="w-5 h-5" />
                             </button>
                         </div>
 
                         <div className="grid grid-cols-3 gap-3 mb-5">
                             <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                                <p className="text-[9px] font-black text-slate-400 uppercase mb-1">基金</p>
+                                <p className="text-[9px] font-black text-slate-400 uppercase mb-1">基金庫存</p>
                                 <p className="text-[10px] font-black text-amber-600 truncate">{credit.foreign} {credit.cur}</p>
                                 <p className="text-[10px] font-black text-slate-700 truncate">NT$ {credit.ntd}</p>
                             </div>
                             <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100">
                                 <p className="text-[9px] font-black text-amber-600/70 uppercase mb-1">待收訂單</p>
-                                <p className="text-sm font-black text-amber-700 mt-1">NT$ {stats.pending.toLocaleString()}</p>
+                                <p className="text-sm font-black text-amber-700 mt-1 leading-none">NT$ {stats.pending.toLocaleString()}</p>
                             </div>
                             <div className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100">
-                                <p className="text-[9px] font-black text-emerald-600/70 uppercase mb-1">利潤</p>
-                                <p className="text-sm font-black text-emerald-700 mt-1">NT$ {stats.profit.toLocaleString()}</p>
+                                <p className="text-[9px] font-black text-emerald-600/70 uppercase mb-1">累計利潤</p>
+                                <p className="text-sm font-black text-emerald-700 mt-1 leading-none">NT$ {stats.profit.toLocaleString()}</p>
                             </div>
                         </div>
 
@@ -136,21 +127,22 @@
                         </div>
 
                         <div className="flex gap-2 overflow-x-auto no-scrollbar py-2">
-                            <button onClick={() => setCurrentActiveCat('全部')} className={`px-4 py-1.5 rounded-full text-[10px] font-black whitespace-nowrap ${currentActiveCat === '全部' ? 'bg-sky-500 text-white shadow-md' : 'bg-slate-100 text-slate-400'}`}>全部</button>
-                            {currentCats.map(c => (
-                                <button key={c} onClick={() => setCurrentActiveCat(c)} className={`px-4 py-1.5 rounded-full text-[10px] font-black whitespace-nowrap ${currentActiveCat === c ? 'bg-sky-500 text-white shadow-md' : 'bg-slate-100 text-slate-400'}`}>{c}</button>
+                            <button onClick={() => viewMode === 'purchase' ? setActivePCat('全部') : setActiveOCat('全部')} className={`px-4 py-1.5 rounded-full text-[10px] font-black whitespace-nowrap ${(viewMode === 'purchase' ? activePCat : activeOCat) === '全部' ? 'bg-sky-500 text-white shadow-md' : 'bg-slate-100 text-slate-400'}`}>全部</button>
+                            {(viewMode === 'purchase' ? pCats : orderStatuses).map(c => (
+                                <button key={c} onClick={() => viewMode === 'purchase' ? setActivePCat(c) : setActiveOCat(c)} className={`px-4 py-1.5 rounded-full text-[10px] font-black whitespace-nowrap ${(viewMode === 'purchase' ? activePCat : activeOCat) === c ? 'bg-sky-500 text-white shadow-md' : 'bg-slate-100 text-slate-400'}`}>{c}</button>
                             ))}
                         </div>
                     </header>
 
                     <div className="p-4 space-y-4">
-                        {items.filter(i => (i.stage === viewMode) && (currentActiveCat === '全部' || i.cat === currentActiveCat)).map(item => (
-                            <div key={item.id} className="bg-white rounded-[24px] p-5 border border-slate-50 shadow-sm relative text-left">
+                        {items.filter(i => (i.stage === viewMode) && (viewMode === 'purchase' ? (activePCat === '全部' || i.cat === activePCat) : (activeOCat === '全部' || i.orderStatus === activeOCat))).map(item => (
+                            <div key={item.id} className="bg-white rounded-[24px] p-5 border border-slate-50 shadow-sm relative text-left overflow-hidden">
+                                <div className={`absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white rounded-bl-xl ${item.payer === '璇' ? 'bg-sky-400' : item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-slate-400'}`}>{item.payer}</div>
                                 <div className="flex justify-between items-start">
-                                    <div>
+                                    <div className="flex-1 pr-4">
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className="text-base font-black text-slate-900">{item.customer}</span>
-                                            <span className="text-[8px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded font-bold uppercase">{item.cat}</span>
+                                            {viewMode === 'purchase' && <span className="text-[8px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded font-bold uppercase">{item.cat}</span>}
                                         </div>
                                         <p className="text-xs text-amber-700 font-bold mb-4">{item.product}</p>
                                         <div className="flex gap-2">
@@ -161,11 +153,17 @@
                                     <div className="text-right mt-6">
                                         <p className="text-[9px] text-slate-300 font-black mb-1">{item.fPrice} {item.cur}</p>
                                         <p className="text-lg font-black text-sky-700 leading-none mb-4">NT$ {Number(item.price).toLocaleString()}</p>
-                                        {viewMode === 'purchase' && (
-                                            <button onClick={() => {
-                                                if (!oCats.includes(item.cat)) setOCats([...oCats, item.cat]);
-                                                setItems(items.map(i => i.id === item.id ? {...i, stage: 'order'} : i));
-                                            }} className="bg-sky-600 text-white text-[10px] font-black px-5 py-2.5 rounded-xl shadow-lg active-scale">已買到</button>
+                                        
+                                        {viewMode === 'purchase' ? (
+                                            <button onClick={() => setItems(items.map(i => i.id === item.id ? {...i, stage: 'order', orderStatus: '待付款'} : i))} className="bg-sky-600 text-white text-[10px] font-black px-5 py-2.5 rounded-xl shadow-lg active-scale">已買到</button>
+                                        ) : (
+                                            <select 
+                                                className={`text-[10px] font-black px-3 py-2 rounded-xl border-none outline-none shadow-md text-white ${item.orderStatus === '完成' ? 'bg-emerald-500' : 'bg-indigo-500'}`}
+                                                value={item.orderStatus}
+                                                onChange={(e) => setItems(items.map(i => i.id === item.id ? {...i, orderStatus: e.target.value} : i))}
+                                            >
+                                                {orderStatuses.map(s => <option key={s} value={s}>{s}</option>)}
+                                            </select>
                                         )}
                                     </div>
                                 </div>
@@ -177,15 +175,15 @@
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 text-left">
                             <div className="bg-white w-full max-w-md rounded-[32px] p-8 shadow-2xl overflow-y-auto max-h-[90vh] no-scrollbar">
                                 <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-xl font-black italic text-sky-900">{isEditing ? '編輯' : '新增'}項目 ({viewMode === 'purchase' ? '採購' : '訂單'})</h2>
+                                    <h2 className="text-xl font-black italic text-sky-900">{isEditing ? '編輯' : '新增'}項目</h2>
                                     <button onClick={() => setShowModal(false)} className="text-slate-300 text-3xl">&times;</button>
                                 </div>
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
-                                            <p className="text-[10px] font-black text-slate-400 px-1 mb-1">分類 (兩端獨立)</p>
-                                            <input list="tag-list" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none border-2 border-transparent focus:border-sky-100" value={form.cat} onChange={e => setForm({...form, cat: e.target.value})} />
-                                            <datalist id="tag-list">{currentCats.map(c => <option key={c} value={c} />)}</datalist>
+                                            <p className="text-[10px] font-black text-slate-400 px-1 mb-1">採購分類</p>
+                                            <input list="p-tag-list" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none border-2 border-transparent focus:border-sky-100" value={form.cat} onChange={e => setForm({...form, cat: e.target.value})} disabled={viewMode === 'order'} />
+                                            <datalist id="p-tag-list">{pCats.map(c => <option key={c} value={c} />)}</datalist>
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-black text-slate-400 px-1 mb-1">代墊人</p>
@@ -196,6 +194,7 @@
                                     </div>
                                     <input placeholder="客戶名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none" value={form.customer} onChange={e => setForm({...form, customer: e.target.value})} />
                                     <input placeholder="商品名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none" value={form.product} onChange={e => setForm({...form, product: e.target.value})} />
+                                    
                                     <div className="bg-slate-50 p-5 rounded-[24px] space-y-4">
                                         <div className="flex gap-2">
                                             <select className="bg-white p-3 rounded-xl text-xs font-black outline-none border border-amber-100" value={form.cur} onChange={e => {
