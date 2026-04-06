@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v4.5</title>
+    <title>LinTin 協作系統 v4.6</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -71,7 +71,7 @@
                         groups[item.customerName] = {
                             customerName: item.customerName,
                             bankLastFive: item.bankLastFive || '',
-                            status: item.status, // 以第一筆狀態為準，或可改為邏輯判斷
+                            status: item.status,
                             payer: item.payer,
                             items: []
                         };
@@ -218,7 +218,7 @@
                     </header>
 
                     <div className="p-4 space-y-4">
-                        {/* 採購清單：保持原本單一顯示 */}
+                        {/* 採購清單 */}
                         {viewMode === 'purchase' && items.filter(i => i.stage === 'purchase').filter(i => i.customerName.includes(searchQuery) || i.productName.includes(searchQuery)).map(item => (
                             <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative overflow-hidden">
                                 <div className={`absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white rounded-bl-xl ${item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-orange-400'}`}>{item.payer}</div>
@@ -232,14 +232,17 @@
                                         </div>
                                     </div>
                                     <div className="flex flex-col items-end gap-2">
-                                        <div className="font-black text-sky-700 text-sm font-mono">NT$ {Number(item.price).toLocaleString()}</div>
+                                        <div className="font-black text-sky-700 text-sm font-mono text-right">
+                                            {item.foreignPrice && item.currency !== 'NTD' && <p className="text-[9px] text-slate-300 uppercase mb-0.5">{Number(item.foreignPrice).toLocaleString()} {item.currency}</p>}
+                                            <p>NT$ {Number(item.price).toLocaleString()}</p>
+                                        </div>
                                         <button onClick={() => markAsBought(item.id)} className="bg-sky-50 text-sky-600 text-[10px] font-black px-5 py-2.5 rounded-xl active-scale border border-sky-100">已買到</button>
                                     </div>
                                 </div>
                             </div>
                         ))}
 
-                        {/* 訂單管理：同客戶合併顯示 */}
+                        {/* 訂單管理：同客戶合併 */}
                         {viewMode === 'order' && groupedOrders
                             .filter(group => orderFilter === '全部' || group.items.some(i => i.status === orderFilter))
                             .filter(group => group.customerName.includes(searchQuery) || group.items.some(i => i.productName.includes(searchQuery)))
@@ -250,7 +253,6 @@
 
                                 return (
                                     <div key={group.customerName} className="bg-white rounded-[32px] shadow-sm border border-slate-100 overflow-hidden">
-                                        {/* 客戶頭部 */}
                                         <div className="p-5 pb-3 flex justify-between items-start bg-slate-50/50">
                                             <div>
                                                 <div className="flex items-center gap-2 mb-1">
@@ -275,18 +277,22 @@
                                             </div>
                                         </div>
 
-                                        {/* 商品列表 */}
                                         <div className="px-5 py-2 space-y-3">
                                             {group.items.map((item, idx) => (
                                                 <div key={item.id} className={`flex justify-between items-center py-2 ${idx !== group.items.length - 1 ? 'border-b border-dashed border-slate-100' : ''}`}>
                                                     <div className="flex-1 pr-4">
                                                         <p className="text-xs text-slate-600 font-medium line-clamp-1">{item.productName}</p>
                                                         <div className="flex gap-2 mt-1">
-                                                            <button onClick={() => openEdit(item)} className="text-slate-300 hover:text-sky-500"><Icon name="edit" className="w-3 h-3" /></button>
-                                                            <button onClick={() => deleteItem(item.id)} className="text-slate-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3" /></button>
+                                                            <button onClick={() => openEdit(item)} className="text-slate-300 hover:text-sky-500 active-scale"><Icon name="edit" className="w-3 h-3" /></button>
+                                                            <button onClick={() => deleteItem(item.id)} className="text-slate-300 hover:text-red-500 active-scale"><Icon name="trash" className="w-3 h-3" /></button>
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
+                                                        {item.foreignPrice && item.currency !== 'NTD' && (
+                                                            <p className="text-[8px] font-black text-slate-300 font-mono uppercase">
+                                                                {Number(item.foreignPrice).toLocaleString()} {item.currency}
+                                                            </p>
+                                                        )}
                                                         <p className="text-[11px] font-black text-slate-400 font-mono">NT$ {Number(item.price).toLocaleString()}</p>
                                                         <p className="text-[9px] font-black text-emerald-400 font-mono">+{Number(item.fee).toLocaleString()}</p>
                                                     </div>
@@ -294,7 +300,6 @@
                                             ))}
                                         </div>
 
-                                        {/* 底部總計 */}
                                         <div className="p-4 bg-sky-50/30 flex justify-between items-center border-t border-slate-50">
                                             <span className="text-[10px] font-black text-sky-900/40 uppercase">Total Amount</span>
                                             <div className="text-right">
