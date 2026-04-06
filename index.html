@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v4.0</title>
+    <title>LinTin 協作系統 v4.1</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -131,7 +131,7 @@
             if (!inviteCode) {
                 return (
                     <div className="min-h-screen bg-sky-50 flex items-center justify-center p-6 text-center">
-                        <div className="w-full max-w-sm bg-white rounded-[40px] p-10 shadow-xl">
+                        <div className="w-full max-sm bg-white rounded-[40px] p-10 shadow-xl">
                             <h1 className="text-2xl font-black text-sky-900 mb-6 italic">LinTin Login</h1>
                             <input type="text" placeholder="代碼" className="w-full bg-slate-50 rounded-2xl py-4 px-6 mb-4 font-black text-sky-600 outline-none" value={tempCode} onChange={(e) => setTempCode(e.target.value)} />
                             <button onClick={() => { setInviteCode(tempCode.toUpperCase()); localStorage.setItem('lintin_invite_code', tempCode.toUpperCase()); }} className="w-full bg-sky-500 text-white py-4 rounded-2xl font-black shadow-lg active-scale">進入系統</button>
@@ -212,10 +212,14 @@
 
                                 <div className="flex justify-between items-start">
                                     <div className="flex-1 pr-4">
-                                        <h3 className="text-sm font-black text-slate-800 flex items-center gap-1.5">
-                                            {item.customerName}
-                                            {item.bankLastFive && <span className="bg-slate-100 text-slate-500 text-[8px] px-1.5 py-0.5 rounded-md font-mono">{item.bankLastFive}</span>}
-                                        </h3>
+                                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                                            <h3 className="text-sm font-black text-slate-800">{item.customerName}</h3>
+                                            {item.bankLastFive && (
+                                                <span className="bg-slate-100 text-slate-500 text-[8px] px-2 py-0.5 rounded-lg font-bold">
+                                                    帳號後五碼：{item.bankLastFive}
+                                                </span>
+                                            )}
+                                        </div>
                                         <p className="text-xs text-slate-400 mt-1 mb-4 leading-relaxed line-clamp-2 font-medium">{item.productName}</p>
                                         <div className="flex gap-2">
                                             <button onClick={() => openEdit(item)} className="bg-slate-50 text-slate-400 p-2.5 rounded-xl hover:text-sky-600 active-scale"><Icon name="edit" /></button>
@@ -252,8 +256,8 @@
 
                     {/* 帳號後五碼彈跳框 */}
                     {showBankModal && (
-                        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-6">
-                            <div className="bg-white w-full max-w-xs rounded-[32px] p-8 shadow-2xl text-center">
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-6 text-center">
+                            <div className="bg-white w-full max-w-xs rounded-[32px] p-8 shadow-2xl">
                                 <div className="bg-amber-50 w-14 h-14 rounded-2xl flex items-center justify-center text-amber-500 mx-auto mb-4 shadow-inner">
                                     <Icon name="card" className="w-7 h-7" />
                                 </div>
