@@ -2,67 +2,137 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>LinTin 系統 - 新增項目</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinTin 系統</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f4; }
-        .card { background: white; padding: 20px; border-radius: 8px; max-width: 400px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .input-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        button { 
-            width: 100%; padding: 10px; background: #000; color: white; border: none; 
-            border-radius: 4px; cursor: pointer; font-size: 16px; 
+        /* 1. 主畫面樣式 - 保持簡潔 */
+        body { font-family: sans-serif; padding: 20px; background-color: #f0f8ff; }
+        .main-container { max-width: 600px; margin: 0 auto; text-align: center; }
+        
+        /* 你原本的淺藍色按鈕樣式 */
+        .add-main-btn {
+            background-color: #87CEFA; 
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        button:disabled { background: #666; }
+
+        /* 2. 彈跳視窗（Modal）背景 */
+        .modal {
+            display: none; /* 預設隱藏 */
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4); /* 背景變暗 */
+        }
+
+        /* 3. 彈跳視窗內容盒（截圖二的介面） */
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 25px;
+            border-radius: 12px;
+            width: 300px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+
+        /* 彈跳視窗內的確認按鈕 */
+        .confirm-btn {
+            width: 100%;
+            background-color: #87CEFA;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* 關閉按鈕 */
+        .close-btn {
+            float: right;
+            color: #aaa;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <div class="input-group">
-        <label>項目名稱：</label>
-        <input type="text" id="itemName" placeholder="請輸入名稱">
+<div class="main-container">
+    <h1>LinTin 訂單管理</h1>
+    <button class="add-main-btn" onclick="openModal()">＋ 新增項目</button>
+</div>
+
+<div id="myModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <h3 style="margin-top: 0;">新增資料</h3>
+        
+        <div class="form-group">
+            <label>項目名稱：</label>
+            <input type="text" id="itemName" placeholder="請輸入名稱">
+        </div>
+
+        <div class="form-group">
+            <label>金額：</label>
+            <input type="number" id="itemPrice" placeholder="0">
+        </div>
+
+        <button class="confirm-btn" onclick="handleConfirm()">確認新增</button>
     </div>
-    <div class="input-group">
-        <label>金額：</label>
-        <input type="number" id="itemPrice" placeholder="0">
-    </div>
-    <button id="addBtn" onclick="handleSubmit()">確認新增</button>
 </div>
 
 <script>
-    // 這裡處理點擊按鈕的邏輯
-    async function handleSubmit() {
+    const modal = document.getElementById("myModal");
+
+    // 打開視窗
+    function openModal() {
+        modal.style.display = "block";
+    }
+
+    // 關閉視窗
+    function closeModal() {
+        modal.style.display = "none";
+    }
+
+    // 點擊視窗外部也可以關閉
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            closeModal();
+        }
+    }
+
+    // 確認新增邏輯
+    function handleConfirm() {
         const name = document.getElementById('itemName').value;
         const price = document.getElementById('itemPrice').value;
-        const btn = document.getElementById('addBtn');
 
         if (!name || !price) {
-            alert("請填寫完整資訊");
+            alert("請完整填寫項目與金額");
             return;
         }
 
-        // 開始處理
-        btn.disabled = true;
-        btn.innerText = "處理中...";
+        // 執行動作
+        alert("新增成功");
 
-        try {
-            // 模擬傳輸延遲，實際對接 Firebase 時會在這裡寫入資料
-            await new Promise(resolve => setTimeout(resolve, 800));
-
-            // 成功後的提示：最簡潔版本，沒有多餘文字
-            alert("新增成功");
-
-            // 清空輸入框
-            document.getElementById('itemName').value = '';
-            document.getElementById('itemPrice').value = '';
-
-        } catch (error) {
-            alert("新增失敗");
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "確認新增";
-        }
+        // 自動清空並關閉視窗
+        document.getElementById('itemName').value = "";
+        document.getElementById('itemPrice').value = "";
+        closeModal();
     }
 </script>
 
