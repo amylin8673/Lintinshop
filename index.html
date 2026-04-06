@@ -31,12 +31,12 @@
         };
 
         const App = () => {
-            const [inviteCode, setInviteCode] = React.useState(localStorage.getItem('lintin_invite_code') || 'LINTIN');
             const [viewMode, setViewMode] = React.useState('purchase'); 
             const [items, setItems] = React.useState([]);
             const [showModal, setShowModal] = React.useState(false);
             const [showCheckModal, setShowCheckModal] = React.useState(false);
             const [showTagModal, setShowTagModal] = React.useState(false);
+            
             const [isEditing, setIsEditing] = React.useState(null);
             const [checkingItem, setCheckingItem] = React.useState(null);
             const [lastFive, setLastFive] = React.useState('');
@@ -49,7 +49,12 @@
 
             const rates = { KRW: 0.024, JPY: 0.21, HKD: 4.1, THB: 0.9, AUD: 21.2, NTD: 1 };
             const currencies = ['KRW', 'JPY', 'THB', 'HKD', 'AUD', 'NTD'];
-            const initialForm = { customerName: '', productName: '', price: '', fee: '', payer: '琳', currency: 'KRW', foreignPrice: '', category: '預設', orderStatus: '待付款', accountDigits: '' };
+            
+            const initialForm = { 
+                customerName: '', productName: '', price: '', fee: '', 
+                payer: '琳', currency: 'KRW', foreignPrice: '', 
+                category: '預設', orderStatus: '待付款', accountDigits: '' 
+            };
             const [formData, setFormData] = React.useState(initialForm);
 
             React.useEffect(() => {
@@ -75,13 +80,15 @@
             };
 
             const filteredItems = items.filter(i => {
-                if (i.stage !== viewMode) return false;
+                const stage = i.stage || 'purchase';
+                if (stage !== viewMode) return false;
                 if (viewMode === 'purchase') return activeCategory === '全部' || (i.category || '預設') === activeCategory;
                 return activeStatus === '全部' || i.orderStatus === activeStatus;
             });
 
             return (
                 <div className="min-h-screen pb-10 text-left">
+                    {/* Header */}
                     <header className="bg-white/90 backdrop-blur-md border-b border-sky-50 sticky top-0 z-30 shadow-sm">
                         <div className="px-5 pt-4">
                             <div className="flex justify-between items-center mb-4">
@@ -116,6 +123,7 @@
                         </div>
                     </header>
 
+                    {/* List */}
                     <div className="p-4 space-y-4">
                         {filteredItems.map(item => (
                             <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative overflow-hidden">
@@ -150,47 +158,51 @@
                         ))}
                     </div>
 
-                    {/* 彈跳框：新增/編輯項目 (修復外幣與代墊人) */}
+                    {/* Modal: Add/Edit (Full restored) */}
                     {showModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 text-left text-slate-900">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh] no-scrollbar">
                                 <div className="flex justify-between items-center mb-6">
                                     <h2 className="text-xl font-black italic text-sky-900">{isEditing ? '編輯項目' : '新增項目'}</h2>
-                                    <button onClick={() => setShowModal(false)} className="text-slate-300 text-3xl">&times;</button>
+                                    <button onClick={() => setShowModal(false)} className="text-slate-300 text-3xl leading-none">&times;</button>
                                 </div>
                                 <div className="space-y-6">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase px-1">商品分類</p>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase px-1 tracking-wider">商品分類</p>
                                             <select className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none appearance-none" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
                                                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
                                             </select>
                                         </div>
                                         <div className="space-y-1.5">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase px-1">代墊人</p>
-                                            <select className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none appearance-none" value={formData.payer} onChange={e => setFormData({...formData, payer: e.target.value})}>
-                                                <option value="琳">琳</option>
-                                                <option value="璇">璇</option>
-                                            </select>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase px-1 tracking-wider">代墊人</p>
+                                            <div className="flex gap-2 h-[52px]">
+                                                {['琳', '璇'].map(p => (
+                                                    <button key={p} onClick={() => setFormData({...formData, payer: p})} className={`flex-1 rounded-2xl text-[10px] font-black transition-all ${formData.payer === p ? 'bg-slate-800 text-white shadow-md' : 'bg-slate-50 text-slate-400'}`}>{p}</button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase px-1">客戶名稱</p>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase px-1 tracking-wider">客戶名稱</p>
                                             <input placeholder="名稱" className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none" value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase px-1">商品名稱</p>
-                                            <input placeholder="商品" className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none" value={formData.productName} onChange={e => setFormData({...formData, productName: e.target.value})} />
+                                            <p className="text-[10px] font-black text-slate-400 uppercase px-1 tracking-wider">商品名稱</p>
+                                            <input placeholder="商品名稱" className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none" value={formData.productName} onChange={e => setFormData({...formData, productName: e.target.value})} />
                                         </div>
                                     </div>
 
-                                    <div className="bg-slate-50 p-5 rounded-[32px] space-y-5">
+                                    <div className="bg-slate-50/50 p-5 rounded-[32px] space-y-5 border border-slate-100">
                                         <div className="space-y-1.5">
-                                            <p className="text-[10px] font-black text-amber-600/70 uppercase px-1">外幣金額</p>
+                                            <p className="text-[10px] font-black text-amber-600/70 uppercase px-1 flex justify-between">
+                                                <span>外幣金額</span>
+                                                <span>匯率 1:{rates[formData.currency]}</span>
+                                            </p>
                                             <div className="flex gap-2">
-                                                <select className="bg-white py-3 px-3 rounded-xl text-xs font-black text-amber-600 outline-none border border-amber-100" value={formData.currency} onChange={(e) => setFormData({...formData, currency: e.target.value})}>
+                                                <select className="bg-white py-3 px-3 rounded-xl text-xs font-black text-amber-600 outline-none border border-amber-100" value={formData.currency} onChange={(e) => setFormData({...formData, currency: e.target.value, foreignPrice: ''})}>
                                                     {currencies.map(c => <option key={c} value={c}>{c}</option>)}
                                                 </select>
                                                 <input type="number" placeholder="0.00" className="flex-1 bg-white py-4 px-4 rounded-2xl outline-none font-black text-sm text-amber-600 border border-amber-100" value={formData.foreignPrice} onChange={e => {
@@ -201,15 +213,22 @@
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-1.5">
-                                                <p className="text-[10px] font-black text-sky-600/70 uppercase px-1">台幣成本</p>
-                                                <input type="number" className="w-full bg-white py-4 px-4 rounded-2xl font-black text-sm text-sky-600 outline-none border border-sky-100" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
+                                                <p className="text-[10px] font-black text-sky-600/70 uppercase px-1 tracking-wider">台幣成本</p>
+                                                <input type="number" placeholder="自動計算" className="w-full bg-white py-4 px-4 rounded-2xl font-black text-sm text-sky-600 outline-none border border-sky-100" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <p className="text-[10px] font-black text-emerald-600/70 uppercase px-1">預期利潤</p>
-                                                <input type="number" className="w-full bg-white py-4 px-4 rounded-2xl font-black text-sm text-emerald-600 outline-none border border-emerald-100" value={formData.fee} onChange={e => setFormData({...formData, fee: e.target.value})} />
+                                                <p className="text-[10px] font-black text-emerald-600/70 uppercase px-1 tracking-wider">預期利潤</p>
+                                                <input type="number" placeholder="0" className="w-full bg-white py-4 px-4 rounded-2xl font-black text-sm text-emerald-600 outline-none border border-emerald-100" value={formData.fee} onChange={e => setFormData({...formData, fee: e.target.value})} />
                                             </div>
                                         </div>
                                     </div>
+
+                                    {isEditing && (
+                                        <div className="space-y-1.5">
+                                            <p className="text-[10px] font-black text-indigo-500 uppercase px-1 tracking-wider">帳號後五碼</p>
+                                            <input placeholder="尚未輸入" className="w-full bg-indigo-50/50 py-4 px-4 rounded-2xl font-bold text-sm text-indigo-600 outline-none border border-indigo-100" value={formData.accountDigits} onChange={e => setFormData({...formData, accountDigits: e.target.value})} />
+                                        </div>
+                                    )}
 
                                     <button onClick={() => {
                                         if (isEditing) setItems(items.map(i => i.id === isEditing ? {...formData, id: isEditing} : i));
@@ -221,16 +240,16 @@
                         </div>
                     )}
 
-                    {/* (其餘 TagModal, CheckModal 邏輯保持不變) */}
+                    {/* Modal: Tag Manager */}
                     {showTagModal && (
                         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-6 text-left">
                             <div className="bg-white w-full max-w-sm rounded-[40px] p-8 shadow-2xl">
                                 <div className="flex justify-between items-center mb-6">
                                     <h2 className="text-xl font-black text-sky-900 italic">管理標籤</h2>
-                                    <button onClick={() => setShowTagModal(false)} className="text-slate-300 text-3xl">&times;</button>
+                                    <button onClick={() => setShowTagModal(false)} className="text-slate-300 text-3xl leading-none">&times;</button>
                                 </div>
                                 <div className="flex gap-2 mb-6">
-                                    <input placeholder="新標籤" className="flex-1 bg-slate-50 py-3 px-4 rounded-xl font-bold text-sm outline-none border-2 border-transparent focus:border-sky-100" value={newTagName} onChange={e => setNewTagName(e.target.value)} />
+                                    <input placeholder="新標籤名稱" className="flex-1 bg-slate-50 py-3 px-4 rounded-xl font-bold text-sm outline-none border-2 border-transparent focus:border-sky-100" value={newTagName} onChange={e => setNewTagName(e.target.value)} />
                                     <button onClick={() => { if(newTagName) { setCategories([...categories, newTagName]); setNewTagName(''); } }} className="bg-sky-500 text-white px-4 rounded-xl font-black active-scale">新增</button>
                                 </div>
                                 <div className="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
@@ -245,17 +264,19 @@
                         </div>
                     )}
 
+                    {/* Modal: Account Check */}
                     {showCheckModal && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-6 text-left">
                             <div className="bg-white w-full max-w-xs rounded-[32px] p-8 shadow-2xl text-center">
-                                <h3 className="text-lg font-black text-slate-900 mb-6">輸入帳號後五碼</h3>
-                                <input type="text" maxLength="5" placeholder="00000" className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-black text-2xl text-center text-indigo-600 outline-none mb-6" value={lastFive} onChange={e => setLastFive(e.target.value)} autoFocus />
+                                <p className="text-[10px] font-black text-indigo-500 uppercase mb-2 tracking-widest">核對帳款</p>
+                                <h3 className="text-lg font-black text-slate-900 mb-6">請輸入帳號後五碼</h3>
+                                <input type="text" maxLength="5" placeholder="00000" className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-black text-2xl text-center text-indigo-600 outline-none border-2 border-transparent focus:border-indigo-100 mb-6" value={lastFive} onChange={e => setLastFive(e.target.value)} autoFocus />
                                 <div className="flex gap-3">
                                     <button onClick={() => setShowCheckModal(false)} className="flex-1 py-4 text-slate-400 font-black text-sm">取消</button>
                                     <button onClick={() => {
                                         setItems(items.map(i => i.id === checkingItem.id ? {...i, orderStatus: '待查帳', accountDigits: lastFive} : i));
                                         setShowCheckModal(false);
-                                    }} className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-black text-sm shadow-lg active-scale">確認</button>
+                                    }} className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-black text-sm shadow-lg active-scale">確認提交</button>
                                 </div>
                             </div>
                         </div>
