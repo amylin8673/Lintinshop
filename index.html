@@ -1,129 +1,91 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin Pro | 完整合體版</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        .user-btn.active-lin { background-color: #f0abfc; color: white; }
-        .user-btn.active-shuan { background-color: #bfdbfe; color: #1e40af; }
-        .unselected { background-color: #f8fafc; color: #cbd5e1; }
-        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
-    </style>
-</head>
-<body class="bg-slate-50 font-sans pb-20">
+import React, { useState } from 'react';
+import { db } from './firebase'; // 請確保路徑正確
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
-    <div class="max-w-md mx-auto p-6 space-y-6">
-        <div class="flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-black text-blue-600 italic leading-none">LinTin</h1>
-                <p class="text-[9px] font-bold text-slate-300 mt-1 uppercase tracking-widest">Professional System</p>
-            </div>
-            <button onclick="openModal()" class="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200 active:scale-90 transition-all">
-                <i class="fas fa-plus text-lg"></i>
-            </button>
-        </div>
+const AddItemForm = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    price: '',
+    quantity: '',
+    note: ''
+  });
 
-        <div class="grid grid-cols-3 gap-3">
-            <div class="bg-white p-4 rounded-[2rem] card-shadow border border-white text-center">
-                <p class="text-[9px] font-bold text-slate-400 mb-1">購物金餘額</p>
-                <p class="text-sm font-black text-blue-500">0 <span class="text-[8px]">KRW</span></p>
-            </div>
-            <div class="bg-white p-4 rounded-[2rem] card-shadow border border-white text-center">
-                <p class="text-[9px] font-bold text-slate-400 mb-1">待收帳款</p>
-                <p class="text-sm font-black text-orange-400">NT$ 0</p>
-            </div>
-            <div class="bg-white p-4 rounded-[2rem] card-shadow border border-white text-center">
-                <p class="text-[9px] font-bold text-slate-400 mb-1">累計利潤</p>
-                <p class="text-sm font-black text-emerald-500">NT$ 0</p>
-            </div>
-        </div>
+  const [loading, setLoading] = useState(false);
 
-        <div class="flex bg-slate-200/50 p-1.5 rounded-2xl">
-            <button class="flex-1 py-2.5 text-xs font-black rounded-xl bg-white text-blue-600 shadow-sm">採購清單</button>
-            <button class="flex-1 py-2.5 text-xs font-black rounded-xl text-slate-400">訂單管理</button>
-        </div>
+  // 處理輸入變更
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-        <div class="relative">
-            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-sm"></i>
-            <input type="text" placeholder="快速搜尋..." class="w-full bg-white border border-slate-100 p-4 pl-12 rounded-2xl text-xs font-medium outline-none">
-        </div>
+  // 確認新增的邏輯
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
 
-        <div id="main-list" class="space-y-4 min-h-[300px] flex flex-col items-center justify-center text-slate-200">
-            <i class="fas fa-inbox text-4xl mb-2"></i>
-            <p class="text-xs font-bold tracking-widest">目前沒有代購資料</p>
+    try {
+      // 1. 寫入 Firebase
+      await addDoc(collection(db, "orders"), {
+        ...formData,
+        price: Number(formData.price), // 確保數字格式
+        quantity: Number(formData.quantity),
+        createdAt: serverTimestamp()
+      });
+
+      // 2. 這裡就是你說的「黑色框框」或提示邏輯
+      // 只顯示最精簡的文字，不夾帶任何變數
+      alert("新增成功"); 
+
+      // 3. 清空表單
+      setFormData({ name: '', price: '', quantity: '', note: '' });
+
+    } catch (error) {
+      console.error("Error adding document: ", error);
+      alert("新增失敗，請檢查網路連線");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ padding: '20px', maxWidth: '400px' }}>
+      <form onSubmit={handleSubmit}>
+        <div style={{ marginBottom: '10px' }}>
+          <label>項目名稱：</label>
+          <input 
+            name="name" 
+            value={formData.name} 
+            onChange={handleChange} 
+            required 
+            style={{ width: '100%' }}
+          />
         </div>
+        <div style={{ marginBottom: '10px' }}>
+          <label>金額：</label>
+          <input 
+            name="price" 
+            type="number"
+            value={formData.price} 
+            onChange={handleChange} 
+            required 
+            style={{ width: '100%' }}
+          />
+        </div>
+        <button 
+          type="submit" 
+          disabled={loading}
+          style={{ 
+            backgroundColor: '#000', 
+            color: '#fff', 
+            padding: '10px 20px', 
+            border: 'none', 
+            cursor: 'pointer' 
+          }}
+        >
+          {loading ? "處理中..." : "確認新增"}
+        </button>
+      </form>
     </div>
+  );
+};
 
-    <div id="modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md hidden items-center justify-center p-5 z-50">
-        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl space-y-6 relative animate-in zoom-in-95 duration-200">
-            <button onclick="closeModal()" class="absolute right-6 top-6 text-slate-300 hover:text-rose-400 transition-colors">
-                <i class="fas fa-times-circle text-2xl"></i>
-            </button>
-
-            <h2 class="text-center text-lg font-black text-slate-700">新增代購</h2>
-
-            <div class="space-y-5">
-                <div>
-                    <label class="text-[10px] font-bold text-slate-400 mb-2 block uppercase">代墊人</label>
-                    <div class="flex bg-slate-100 p-1 rounded-2xl gap-1">
-                        <button onclick="setUser('none')" id="btn-none" class="user-btn flex-1 py-2 text-xs font-black rounded-xl active-none">無</button>
-                        <button onclick="setUser('lin')" id="btn-lin" class="user-btn flex-1 py-2 text-xs font-black rounded-xl unselected">琳</button>
-                        <button onclick="setUser('shuan')" id="btn-shuan" class="user-btn flex-1 py-2 text-xs font-black rounded-xl unselected">璇</button>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <input type="text" id="cust" placeholder="買家名稱" class="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl text-sm font-bold outline-none">
-                    <input type="text" id="prod" placeholder="商品名稱" class="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl text-sm font-bold outline-none">
-                </div>
-
-                <div class="relative flex items-center">
-                    <select id="curr" onchange="calc()" class="absolute left-3 bg-white border border-slate-100 rounded-lg px-1 py-1 text-[10px] font-black text-blue-500 outline-none">
-                        <option value="0.024">KRW</option>
-                        <option value="0.215">JPY</option>
-                    </select>
-                    <input type="number" id="fAmt" oninput="calc()" placeholder="外幣金額" class="w-full bg-slate-50 border border-slate-100 py-4 pl-20 pr-4 rounded-2xl text-sm font-black outline-none">
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 text-sm font-black text-blue-600">NT$ <span id="twRes">0</span></div>
-                    <input type="number" id="prof" placeholder="代購費" class="w-full bg-emerald-50/50 p-4 rounded-2xl text-sm font-black text-emerald-600 border border-emerald-100 outline-none">
-                </div>
-
-                <button onclick="save()" class="w-full bg-sky-400 text-white py-5 rounded-[1.5rem] font-black shadow-xl shadow-sky-100 active:scale-95 transition-all">確認新增</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let curUser = 'none';
-        function openModal() { document.getElementById('modal').classList.replace('hidden', 'flex'); }
-        function closeModal() { document.getElementById('modal').classList.replace('flex', 'hidden'); }
-
-        function setUser(u) {
-            curUser = u;
-            document.querySelectorAll('.user-btn').forEach(b => b.className = 'user-btn flex-1 py-2 text-xs font-black rounded-xl unselected');
-            const b = document.getElementById('btn-'+u);
-            if(u==='lin') b.className = 'user-btn flex-1 py-2 text-xs font-black rounded-xl active-lin shadow-sm';
-            else if(u==='shuan') b.className = 'user-btn flex-1 py-2 text-xs font-black rounded-xl active-shuan shadow-sm';
-            else b.className = 'user-btn flex-1 py-2 text-xs font-black rounded-xl bg-slate-200 text-slate-500 shadow-sm';
-        }
-
-        function calc() {
-            const v = document.getElementById('fAmt').value;
-            const r = document.getElementById('curr').value;
-            const tw = Math.round(v * r);
-            document.getElementById('twRes').innerText = tw.toLocaleString();
-            document.getElementById('prof').value = Math.round(tw * 0.1);
-        }
-
-        function save() {
-            alert('門面與功能已全部合體！現在可以點擊測試了。');
-            closeModal();
-        }
-    </script>
-</body>
-</html>
+export default AddItemForm;
