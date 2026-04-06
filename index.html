@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 v12.0</title>
+    <title>LinTin 系統 v13.0</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -27,13 +27,13 @@
                 box: <path d="M21 8l-2-2H5L3 8v11a2 2 0 002 2h14a2 2 0 002-2V8zM5 8l1.5-1.5h11L19 8H5zm14 11H5V10h14v9zM9 12h6v2H9v-2z" />,
                 edit: <path d="M14.06 3.02l.92.92L5.92 13H5v-.92l9.06-9.06M17.66 1c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 15.25V21h5.75L19.81 9.94l-3.75-3.75z" />,
                 trash: <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z" />,
-                plus: <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                plus: <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />,
+                x: <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
             };
             return <svg className={className} viewBox="0 0 24 24" fill="currentColor">{icons[name]}</svg>;
         };
 
         const App = () => {
-            // 基礎資料
             const [items, setItems] = useState(() => JSON.parse(localStorage.getItem('lt_items')) || []);
             const [pCats, setPCats] = useState(() => JSON.parse(localStorage.getItem('lt_p_cats')) || ['預設', '服飾']);
             const orderStatuses = ['待付款', '已匯款', '待查帳', '已出貨', '完成'];
@@ -51,7 +51,6 @@
             const initialForm = { customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款' };
             const [form, setForm] = useState(initialForm);
 
-            // 1. 抓取匯率
             useEffect(() => {
                 const getRates = async () => {
                     try {
@@ -66,25 +65,30 @@
                 getRates();
             }, []);
 
-            // 2. 持久化存儲
+            // 存檔邏輯優化：確保不覆蓋
             useEffect(() => {
                 localStorage.setItem('lt_items', JSON.stringify(items));
                 localStorage.setItem('lt_p_cats', JSON.stringify(pCats));
                 localStorage.setItem('lt_credit', JSON.stringify(credit));
             }, [items, pCats, credit]);
 
-            // 3. 儲存邏輯
             const handleSave = () => {
                 if (viewMode === 'purchase' && form.cat && !pCats.includes(form.cat)) {
                     setPCats([...pCats, form.cat]);
                 }
-
                 if (isEditing) {
                     setItems(items.map(i => i.id === isEditing ? { ...form, id: isEditing } : i));
                 } else {
                     setItems([{ ...form, id: Date.now(), stage: viewMode }, ...items]);
                 }
                 setShowModal(false);
+            };
+
+            const deleteCat = (target) => {
+                if (target === '預設') return;
+                setPCats(pCats.filter(c => c !== target));
+                if (activePCat === target) setActivePCat('全部');
+                if (form.cat === target) setForm({...form, cat: '預設'});
             };
 
             const stats = useMemo(() => ({
@@ -106,17 +110,17 @@
                         </div>
 
                         <div className="grid grid-cols-3 gap-3 mb-5">
-                            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                                <p className="text-[9px] font-black text-slate-400 uppercase mb-1">基金庫存</p>
+                            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-left">
+                                <p className="text-[9px] font-black text-slate-400 uppercase mb-1">基金</p>
                                 <p className="text-[10px] font-black text-amber-600 truncate">{credit.foreign} {credit.cur}</p>
                                 <p className="text-[10px] font-black text-slate-700 truncate">NT$ {credit.ntd}</p>
                             </div>
-                            <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100">
+                            <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100 text-left">
                                 <p className="text-[9px] font-black text-amber-600/70 uppercase mb-1">待收訂單</p>
                                 <p className="text-sm font-black text-amber-700 mt-1 leading-none">NT$ {stats.pending.toLocaleString()}</p>
                             </div>
-                            <div className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100">
-                                <p className="text-[9px] font-black text-emerald-600/70 uppercase mb-1">累計利潤</p>
+                            <div className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100 text-left">
+                                <p className="text-[9px] font-black text-emerald-600/70 uppercase mb-1">利潤</p>
                                 <p className="text-sm font-black text-emerald-700 mt-1 leading-none">NT$ {stats.profit.toLocaleString()}</p>
                             </div>
                         </div>
@@ -153,15 +157,10 @@
                                     <div className="text-right mt-6">
                                         <p className="text-[9px] text-slate-300 font-black mb-1">{item.fPrice} {item.cur}</p>
                                         <p className="text-lg font-black text-sky-700 leading-none mb-4">NT$ {Number(item.price).toLocaleString()}</p>
-                                        
                                         {viewMode === 'purchase' ? (
                                             <button onClick={() => setItems(items.map(i => i.id === item.id ? {...i, stage: 'order', orderStatus: '待付款'} : i))} className="bg-sky-600 text-white text-[10px] font-black px-5 py-2.5 rounded-xl shadow-lg active-scale">已買到</button>
                                         ) : (
-                                            <select 
-                                                className={`text-[10px] font-black px-3 py-2 rounded-xl border-none outline-none shadow-md text-white ${item.orderStatus === '完成' ? 'bg-emerald-500' : 'bg-indigo-500'}`}
-                                                value={item.orderStatus}
-                                                onChange={(e) => setItems(items.map(i => i.id === item.id ? {...i, orderStatus: e.target.value} : i))}
-                                            >
+                                            <select className={`text-[10px] font-black px-3 py-2 rounded-xl border-none outline-none shadow-md text-white ${item.orderStatus === '完成' ? 'bg-emerald-500' : 'bg-indigo-500'}`} value={item.orderStatus} onChange={(e) => setItems(items.map(i => i.id === item.id ? {...i, orderStatus: e.target.value} : i))}>
                                                 {orderStatuses.map(s => <option key={s} value={s}>{s}</option>)}
                                             </select>
                                         )}
@@ -179,19 +178,34 @@
                                     <button onClick={() => setShowModal(false)} className="text-slate-300 text-3xl">&times;</button>
                                 </div>
                                 <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <p className="text-[10px] font-black text-slate-400 px-1 mb-1">採購分類</p>
-                                            <input list="p-tag-list" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none border-2 border-transparent focus:border-sky-100" value={form.cat} onChange={e => setForm({...form, cat: e.target.value})} disabled={viewMode === 'order'} />
-                                            <datalist id="p-tag-list">{pCats.map(c => <option key={c} value={c} />)}</datalist>
+                                    {viewMode === 'purchase' && (
+                                        <div className="mb-2">
+                                            <p className="text-[10px] font-black text-slate-400 px-1 mb-2">分類管理 (點擊 × 刪除)</p>
+                                            <div className="flex flex-wrap gap-2 mb-3">
+                                                {pCats.map(c => (
+                                                    <div key={c} className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black ${form.cat === c ? 'bg-sky-500 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                                        <span onClick={() => setForm({...form, cat: c})}>{c}</span>
+                                                        {c !== '預設' && <button onClick={() => deleteCat(c)} className="ml-1 opacity-60 hover:opacity-100"><Icon name="x" className="w-3 h-3" /></button>}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <input placeholder="+ 輸入新分類名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none border-2 border-transparent focus:border-sky-100" value={form.cat} onChange={e => setForm({...form, cat: e.target.value})} />
                                         </div>
+                                    )}
+
+                                    <div className="grid grid-cols-2 gap-3">
                                         <div>
                                             <p className="text-[10px] font-black text-slate-400 px-1 mb-1">代墊人</p>
                                             <div className="flex gap-1 bg-slate-50 p-1 rounded-2xl h-[52px]">
                                                 {['琳', '璇', '無'].map(p => <button key={p} onClick={() => setForm({...form, payer: p})} className={`flex-1 rounded-xl text-[10px] font-black transition-all ${form.payer === p ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400'}`}>{p}</button>)}
                                             </div>
                                         </div>
+                                        <div className="opacity-50">
+                                            <p className="text-[10px] font-black text-slate-400 px-1 mb-1">當前匯率參考</p>
+                                            <div className="bg-slate-50 p-3 rounded-2xl text-[10px] font-bold text-slate-500">1 {form.cur} ≈ {rates[form.cur]?.toFixed(3)} TWD</div>
+                                        </div>
                                     </div>
+
                                     <input placeholder="客戶名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none" value={form.customer} onChange={e => setForm({...form, customer: e.target.value})} />
                                     <input placeholder="商品名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none" value={form.product} onChange={e => setForm({...form, product: e.target.value})} />
                                     
