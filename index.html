@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v2.6</title>
+    <title>LinTin 協作系統 v2.7</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -22,7 +22,7 @@
 
     <script type="text/babel">
         const Icon = ({ name }) => {
-            const icons = { plus: '＋', box: '📦', down: '▼', check: '✅' };
+            const icons = { box: '📦', down: '▼' };
             return <span style={{fontSize: '12px'}}>{icons[name]}</span>;
         };
 
@@ -34,7 +34,6 @@
             const [items, setItems] = React.useState([]);
             
             const [fundSettings, setFundSettings] = React.useState({ amount: 1000000, currency: 'KRW' });
-
             const currencies = ['KRW', 'JPY', 'THB', 'HKD', 'AUD', 'NTD'];
             const exchangeRates = { KRW: 0.024, JPY: 0.21, HKD: 4.1, THB: 0.9, AUD: 21.2, NTD: 1 };
 
@@ -43,19 +42,15 @@
 
             const saveItem = () => {
                 if (!formData.customerName || !formData.productName) { alert("請填寫必要資訊"); return; }
-                const newItem = { id: Date.now(), ...formData, stage: 'purchase' };
-                setItems([newItem, ...items]);
+                setItems([{ id: Date.now(), ...formData, stage: 'purchase' }, ...items]);
                 alert("新增成功"); 
                 setShowModal(false);
                 setFormData(initialForm);
             };
 
-            // --- 核心功能：標記為已買到並跳轉 ---
             const markAsBought = (id) => {
-                setItems(items.map(item => 
-                    item.id === id ? { ...item, stage: 'order' } : item
-                ));
-                setViewMode('order'); // 自動跳轉到訂單管理畫面
+                setItems(items.map(item => item.id === id ? { ...item, stage: 'order' } : item));
+                setViewMode('order');
             };
 
             if (!inviteCode) {
@@ -64,7 +59,7 @@
                         <div className="w-full max-w-sm bg-white rounded-[40px] p-10 shadow-xl text-center">
                             <h1 className="text-2xl font-black text-sky-900 mb-6 italic">LinTin Login</h1>
                             <input type="text" placeholder="代碼" className="w-full bg-slate-50 rounded-2xl py-4 px-6 mb-4 font-black text-sky-600 outline-none" value={tempCode} onChange={(e) => setTempCode(e.target.value)} />
-                            <button onClick={() => { setInviteCode(tempCode.toUpperCase()); localStorage.setItem('lintin_invite_code', tempCode.toUpperCase()); }} className="w-full bg-sky-500 text-white py-4 rounded-2xl font-black shadow-lg">進入系統</button>
+                            <button onClick={() => { setInviteCode(tempCode.toUpperCase()); localStorage.setItem('lintin_invite_code', tempCode.toUpperCase()); }} className="w-full bg-sky-500 text-white py-4 rounded-2xl font-black shadow-lg active-scale">進入系統</button>
                         </div>
                     </div>
                 );
@@ -85,26 +80,17 @@
                             <div className="col-span-1 bg-white p-2 rounded-2xl border border-sky-100 shadow-sm">
                                 <p className="text-[8px] font-black text-slate-400 uppercase mb-1">購物金餘額</p>
                                 <div className="flex items-center gap-1">
-                                    <input 
-                                        type="number"
-                                        className="w-full text-[11px] font-black text-sky-600 bg-transparent outline-none"
-                                        value={fundSettings.amount}
-                                        onChange={(e) => setFundSettings({...fundSettings, amount: e.target.value})}
-                                    />
+                                    <input type="number" className="w-full text-[11px] font-black text-sky-600 bg-transparent outline-none" value={fundSettings.amount} onChange={(e) => setFundSettings({...fundSettings, amount: e.target.value})} />
                                     <div className="relative flex items-center">
-                                        <select 
-                                            className="text-[9px] font-black text-sky-400 bg-sky-50 py-0.5 px-1.5 rounded-md outline-none pr-3 cursor-pointer"
-                                            value={fundSettings.currency}
-                                            onChange={(e) => setFundSettings({ ...fundSettings, currency: e.target.value })}
-                                        >
+                                        <select className="text-[9px] font-black text-sky-400 bg-sky-50 py-0.5 px-1.5 rounded-md outline-none pr-3 cursor-pointer" value={fundSettings.currency} onChange={(e) => setFundSettings({ ...fundSettings, currency: e.target.value })}>
                                             {currencies.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
-                                        <div className="absolute right-1 pointer-events-none text-sky-300 font-bold">▼</div>
+                                        <div className="absolute right-1 pointer-events-none text-sky-300 font-bold text-[8px]">▼</div>
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-white p-2 rounded-2xl border border-sky-100 shadow-sm"><p className="text-[8px] font-black text-slate-400 mb-1 uppercase">待收帳款</p><p className="text-[11px] font-black text-amber-500 italic truncate">NT$ 0</p></div>
-                            <div className="bg-white p-2 rounded-2xl border border-sky-100 shadow-sm"><p className="text-[8px] font-black text-slate-400 mb-1 uppercase">累積利潤</p><p className="text-[11px] font-black text-emerald-500 italic truncate">NT$ 0</p></div>
+                            <div className="bg-white p-2 rounded-2xl border border-sky-100 shadow-sm"><p className="text-[8px] font-black text-slate-400 mb-1 uppercase">待收帳款</p><p className="text-[11px] font-black text-amber-500 italic">NT$ 0</p></div>
+                            <div className="bg-white p-2 rounded-2xl border border-sky-100 shadow-sm"><p className="text-[8px] font-black text-slate-400 mb-1 uppercase">累積利潤</p><p className="text-[11px] font-black text-emerald-500 italic">NT$ 0</p></div>
                         </div>
 
                         <div className="flex">
@@ -119,41 +105,40 @@
 
                     <div className="p-4 space-y-3">
                         {items.filter(i => i.stage === viewMode).map(item => (
-                            <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative group">
+                            <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative">
                                 {item.payer && (
                                     <div className={`absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white rounded-bl-xl ${item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-orange-400'}`}>
                                         {item.payer}
                                     </div>
                                 )}
-                                <h3 className="text-sm font-black text-slate-800">{item.customerName} ✨</h3>
-                                <p className="text-xs text-slate-400 mt-1">{item.productName}</p>
-                                
-                                <div className="mt-4 flex justify-between items-end">
-                                    {/* 僅在採購清單顯示「已買到」按鈕 */}
-                                    {viewMode === 'purchase' ? (
-                                        <button 
-                                            onClick={() => markAsBought(item.id)}
-                                            className="bg-sky-50 text-sky-600 text-[10px] font-black px-4 py-2 rounded-xl active-scale hover:bg-sky-500 hover:text-white transition-all flex items-center gap-1 shadow-sm border border-sky-100"
-                                        >
-                                            已買到 <Icon name="check" />
-                                        </button>
-                                    ) : (
-                                        <div className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-3 py-1 rounded-lg">✓ 已完成採購</div>
-                                    )}
-                                    <div className="text-right font-black text-sky-700 text-sm italic">NT$ {Number(item.price).toLocaleString()}</div>
+                                <div className="flex justify-between items-start">
+                                    <div className="flex-1 pr-4">
+                                        <h3 className="text-sm font-black text-slate-800">{item.customerName} ✨</h3>
+                                        <p className="text-xs text-slate-400 mt-1">{item.productName}</p>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-2">
+                                        <div className="font-black text-sky-700 text-sm italic">NT$ {Number(item.price).toLocaleString()}</div>
+                                        {viewMode === 'purchase' ? (
+                                            <button 
+                                                onClick={() => markAsBought(item.id)}
+                                                className="bg-sky-50 text-sky-600 text-[10px] font-black px-4 py-1.5 rounded-xl active-scale hover:bg-sky-500 hover:text-white transition-all border border-sky-100"
+                                            >
+                                                已買到
+                                            </button>
+                                        ) : (
+                                            <div className="text-[9px] font-black text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-lg">已完成</div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))}
-                        {items.filter(i => i.stage === viewMode).length === 0 && (
-                            <div className="text-center py-20 text-slate-300 font-black text-xs uppercase tracking-widest">目前沒有項目</div>
-                        )}
                     </div>
 
                     {showModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 text-left">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
                                 <div className="flex justify-between items-center mb-8">
-                                    <h2 className="text-xl font-black italic text-sky-900 font-black">新增項目</h2>
+                                    <h2 className="text-xl font-black italic text-sky-900">新增項目</h2>
                                     <button onClick={() => setShowModal(false)} className="text-slate-300 text-2xl">&times;</button>
                                 </div>
                                 <div className="space-y-6">
@@ -166,15 +151,11 @@
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <input placeholder="客戶名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none focus:ring-1 ring-sky-200" value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} />
-                                        <input placeholder="商品名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none focus:ring-1 ring-sky-200" value={formData.productName} onChange={e => setFormData({...formData, productName: e.target.value})} />
+                                        <input placeholder="客戶名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none" value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} />
+                                        <input placeholder="商品名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none" value={formData.productName} onChange={e => setFormData({...formData, productName: e.target.value})} />
                                     </div>
-                                    <div className="bg-amber-50 p-5 rounded-3xl space-y-4 shadow-inner">
-                                        <select 
-                                            className="w-full bg-white p-3 rounded-xl text-xs font-black text-amber-600 outline-none border border-amber-100"
-                                            value={formData.currency}
-                                            onChange={(e) => setFormData({...formData, currency: e.target.value, foreignPrice: ''})}
-                                        >
+                                    <div className="bg-amber-50 p-5 rounded-3xl space-y-4">
+                                        <select className="w-full bg-white p-3 rounded-xl text-xs font-black text-amber-600 outline-none border border-amber-100 cursor-pointer" value={formData.currency} onChange={(e) => setFormData({...formData, currency: e.target.value, foreignPrice: ''})}>
                                             {currencies.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
                                         {formData.currency !== 'NTD' && (
