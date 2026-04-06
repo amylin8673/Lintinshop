@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v5.9</title>
+    <title>LinTin 協作系統 v6.0</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -46,10 +46,7 @@
             const [payers, setPayers] = React.useState(JSON.parse(localStorage.getItem('lintin_payers')) || ['琳', '璇']);
             const [rates, setRates] = React.useState({ KRW: 0.024, JPY: 0.21, HKD: 4.1, THB: 0.9, AUD: 21.2, NTD: 1 });
             const [isUpdatingRates, setIsUpdatingRates] = React.useState(false);
-            
-            // 購物金餘額初始值改為空字串
             const [fundSettings, setFundSettings] = React.useState({ amount: '', currency: 'KRW' });
-            
             const [pendingFinance, setPendingFinance] = React.useState(0);
             const [totalProfit, setTotalProfit] = React.useState(0);
 
@@ -159,13 +156,7 @@
                             <div className="bg-white p-2.5 rounded-2xl border border-sky-100 shadow-sm flex flex-col items-center justify-center">
                                 <p className="text-[8px] font-black text-slate-400 uppercase mb-1">購物金餘額</p>
                                 <div className="flex items-center justify-center gap-0.5 w-full">
-                                    <input 
-                                        type="number" 
-                                        placeholder="輸入金額"
-                                        className="w-16 text-[11px] font-black text-sky-600 bg-transparent outline-none text-center font-mono placeholder:text-sky-200" 
-                                        value={fundSettings.amount} 
-                                        onChange={(e) => setFundSettings({...fundSettings, amount: e.target.value})} 
-                                    />
+                                    <input type="number" placeholder="0" className="w-16 text-[11px] font-black text-sky-600 bg-transparent outline-none text-center font-mono placeholder:text-sky-200" value={fundSettings.amount} onChange={(e) => setFundSettings({...fundSettings, amount: e.target.value})} />
                                     <select className="text-[8px] font-black text-sky-400 bg-sky-50 px-0.5 rounded outline-none" value={fundSettings.currency} onChange={(e) => setFundSettings({ ...fundSettings, currency: e.target.value })}>
                                         {currencies.map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
@@ -197,8 +188,11 @@
                                 <div className={`absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white rounded-bl-xl ${getPayerColor(item.payer)}`}>{item.payer}</div>
                                 <div className="flex justify-between items-start">
                                     <div className="flex-1 pr-4">
-                                        <h3 className="text-sm font-black text-slate-800 mb-1">{item.customerName}</h3>
-                                        <p className="text-xs text-slate-400 mb-4 font-medium">{item.productName}</p>
+                                        <h3 className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-wider">{item.customerName}</h3>
+                                        {/* 商品名稱底色優化區塊 */}
+                                        <div className="inline-block bg-sky-50/70 border border-sky-100/50 px-3 py-1.5 rounded-xl mb-4">
+                                            <p className="text-xs text-sky-900/70 font-black leading-tight">{item.productName}</p>
+                                        </div>
                                         <div className="flex gap-2">
                                             <button onClick={() => openEdit(item)} className="bg-slate-50 text-slate-400 p-2.5 rounded-xl active-scale"><Icon name="edit" /></button>
                                             <button onClick={() => deleteItem(item.id)} className="bg-slate-50 text-slate-400 p-2.5 rounded-xl active-scale"><Icon name="trash" /></button>
@@ -209,13 +203,14 @@
                                             {item.foreignPrice && item.currency !== 'NTD' && <p className="text-[9px] text-slate-300 uppercase mb-0.5">{Number(item.foreignPrice).toLocaleString()} {item.currency}</p>}
                                             <p>NT$ {Number(item.price).toLocaleString()}</p>
                                         </div>
-                                        {viewMode === 'purchase' && <button onClick={() => markAsBought(item.id)} className="mt-2 bg-sky-50 text-sky-600 text-[10px] font-black px-4 py-2 rounded-xl border border-sky-100">已買到</button>}
+                                        {viewMode === 'purchase' && <button onClick={() => markAsBought(item.id)} className="mt-3 bg-sky-600 text-white text-[10px] font-black px-4 py-2.5 rounded-xl shadow-lg shadow-sky-100 active-scale border border-sky-500">已買到</button>}
                                     </div>
                                 </div>
                             </div>
                         ))}
                     </div>
 
+                    {/* Modal 保持不變 (具備標籤與正確初始值) */}
                     {showModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 text-left">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
@@ -223,7 +218,6 @@
                                     <h2 className="text-xl font-black italic text-sky-900">{isEditing ? '編輯項目' : '新增項目'}</h2>
                                     <button onClick={() => setShowModal(false)} className="text-slate-300 text-3xl leading-none">&times;</button>
                                 </div>
-                                
                                 <div className="space-y-6">
                                     <div>
                                         <div className="flex justify-between items-center mb-3 px-1">
@@ -239,7 +233,6 @@
                                             ))}
                                         </div>
                                     </div>
-
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="relative">
                                             <span className="absolute left-4 top-2 text-[9px] font-black text-slate-400 uppercase">客戶</span>
@@ -250,7 +243,6 @@
                                             <input className="w-full bg-slate-50 pt-7 pb-3 px-4 rounded-2xl font-bold text-sm outline-none border border-transparent focus:border-slate-200" value={formData.productName} onChange={e => setFormData({...formData, productName: e.target.value})} />
                                         </div>
                                     </div>
-
                                     <div className="bg-amber-50/50 p-5 rounded-[32px] space-y-4 border border-amber-100/50">
                                         <div className="relative">
                                             <span className="absolute left-3.5 top-2 text-[9px] font-black text-amber-500/60 uppercase z-10">幣別選擇</span>
@@ -259,11 +251,10 @@
                                             </select>
                                             <div className="absolute right-3 top-6 text-amber-300 pointer-events-none"><Icon name="down" className="w-3.5 h-3.5" /></div>
                                         </div>
-                                        
                                         {formData.currency !== 'NTD' && (
                                             <div className="relative">
                                                 <span className="absolute left-4 top-2.5 text-[9px] font-black text-amber-500 uppercase z-10">外幣金額</span>
-                                                <input type="number" className="w-full bg-white pt-8 pb-3.5 px-4 rounded-2xl outline-none font-black text-sm text-amber-600 shadow-sm border border-amber-100 focus:ring-2 focus:ring-amber-200" value={formData.foreignPrice} onChange={e => {
+                                                <input type="number" className="w-full bg-white pt-8 pb-3.5 px-4 rounded-2xl outline-none font-black text-sm text-amber-600 shadow-sm border border-amber-100" value={formData.foreignPrice} onChange={e => {
                                                     const val = e.target.value;
                                                     const twd = Math.round(Number(val) * rates[formData.currency]);
                                                     setFormData({...formData, foreignPrice: val, price: twd.toString()});
@@ -271,19 +262,17 @@
                                             </div>
                                         )}
                                     </div>
-
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="relative">
                                             <span className="absolute left-4 top-2.5 text-[9px] font-black text-sky-500 uppercase z-10">台幣成本</span>
-                                            <input type="number" className="w-full bg-sky-50 pt-8 pb-3.5 px-4 rounded-2xl font-black text-sm text-sky-600 outline-none border border-sky-100 focus:ring-2 focus:ring-sky-200" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
+                                            <input type="number" className="w-full bg-sky-50 pt-8 pb-3.5 px-4 rounded-2xl font-black text-sm text-sky-600 outline-none border border-sky-100" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
                                         </div>
                                         <div className="relative">
                                             <span className="absolute left-4 top-2.5 text-[9px] font-black text-emerald-500 uppercase z-10">預期利潤</span>
-                                            <input type="number" className="w-full bg-emerald-50 pt-8 pb-3.5 px-4 rounded-2xl font-black text-sm text-emerald-600 outline-none border border-emerald-100 focus:ring-2 focus:ring-emerald-200" value={formData.fee} onChange={e => setFormData({...formData, fee: e.target.value})} />
+                                            <input type="number" className="w-full bg-emerald-50 pt-8 pb-3.5 px-4 rounded-2xl font-black text-sm text-emerald-600 outline-none border border-emerald-100" value={formData.fee} onChange={e => setFormData({...formData, fee: e.target.value})} />
                                         </div>
                                     </div>
-
-                                    <button onClick={saveItem} className="w-full bg-sky-600 text-white py-5 rounded-3xl font-black shadow-xl active-scale hover:bg-sky-700 transition-colors mt-2">儲存項目</button>
+                                    <button onClick={saveItem} className="w-full bg-sky-600 text-white py-5 rounded-3xl font-black shadow-xl active-scale">儲存項目</button>
                                 </div>
                             </div>
                         </div>
