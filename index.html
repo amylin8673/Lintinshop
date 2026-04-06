@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v3.6</title>
+    <title>LinTin 協作系統 v3.7</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -27,8 +27,7 @@
                 edit: <path d="M14.06 3.02l.92.92L5.92 13H5v-.92l9.06-9.06M17.66 1c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 15.25V21h5.75L19.81 9.94l-3.75-3.75z" />,
                 trash: <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z" />,
                 down: <path d="M7 10l5 5 5-5H7z" />,
-                search: <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />,
-                filter: <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z" />
+                search: <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
             };
             return (
                 <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -41,7 +40,7 @@
             const [inviteCode, setInviteCode] = React.useState(localStorage.getItem('lintin_invite_code') || '');
             const [tempCode, setTempCode] = React.useState('');
             const [viewMode, setViewMode] = React.useState('purchase'); 
-            const [orderFilter, setOrderFilter] = React.useState('全部訂單');
+            const [orderFilter, setOrderFilter] = React.useState('全部');
             const [searchQuery, setSearchQuery] = React.useState('');
             const [showModal, setShowModal] = React.useState(false);
             const [isEditing, setIsEditing] = React.useState(null);
@@ -53,7 +52,7 @@
 
             const currencies = ['KRW', 'JPY', 'THB', 'HKD', 'AUD', 'NTD'];
             const exchangeRates = { KRW: 0.024, JPY: 0.21, HKD: 4.1, THB: 0.9, AUD: 21.2, NTD: 1 };
-            const orderStatusList = ['全部訂單', '未付款', '已匯款', '待查帳', '已發貨', '已完成'];
+            const orderStatusList = ['全部', '未付款', '已匯款', '待查帳', '已發貨', '已完成'];
 
             const initialForm = { customerName: '', productName: '', price: '', fee: '', payer: '琳', currency: 'KRW', foreignPrice: '', status: '未付款' };
             const [formData, setFormData] = React.useState(initialForm);
@@ -104,7 +103,7 @@
 
             if (!inviteCode) {
                 return (
-                    <div className="min-h-screen bg-sky-50 flex items-center justify-center p-6 text-center text-left">
+                    <div className="min-h-screen bg-sky-50 flex items-center justify-center p-6 text-center">
                         <div className="w-full max-w-sm bg-white rounded-[40px] p-10 shadow-xl">
                             <h1 className="text-2xl font-black text-sky-900 mb-6 italic">LinTin Login</h1>
                             <input type="text" placeholder="代碼" className="w-full bg-slate-50 rounded-2xl py-4 px-6 mb-4 font-black text-sky-600 outline-none" value={tempCode} onChange={(e) => setTempCode(e.target.value)} />
@@ -120,9 +119,9 @@
                         <div className="flex justify-between items-center mb-4">
                             <div className="flex items-center gap-2">
                                 <div className="bg-sky-500 p-2.5 rounded-xl text-white shadow-md"><Icon name="box" className="w-5 h-5" /></div>
-                                <h1 className="text-xl font-black text-sky-900 italic tracking-tight">LinTin</h1>
+                                <h1 className="text-xl font-black text-sky-900 italic tracking-tight leading-none">LinTin</h1>
                             </div>
-                            <button onClick={() => { setIsEditing(null); setFormData(initialForm); setShowModal(true); }} className="bg-sky-600 text-white p-2.5 rounded-xl shadow-lg active-scale transition-all">＋</button>
+                            <button onClick={() => { setIsEditing(null); setFormData(initialForm); setShowModal(true); }} className="bg-sky-600 text-white p-2.5 rounded-xl shadow-lg active-scale">＋</button>
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 mb-4">
@@ -147,25 +146,30 @@
 
                         <div className="flex mb-3">
                             {['purchase', 'order'].map(m => (
-                                <button key={m} onClick={() => setViewMode(m)} className={`flex-1 pb-3 text-xs font-black transition-all relative ${viewMode === m ? 'text-sky-600' : 'text-slate-400'}`}>
+                                <button key={m} onClick={() => { setViewMode(m); setOrderFilter('全部'); }} className={`flex-1 pb-3 text-xs font-black transition-all relative ${viewMode === m ? 'text-sky-600' : 'text-slate-400'}`}>
                                     {m === 'purchase' ? '採購清單' : '訂單管理'}
                                     {viewMode === m && <div className="absolute bottom-0 left-0 right-0 h-1 bg-sky-500 rounded-t-full mx-8" />}
                                 </button>
                             ))}
                         </div>
 
+                        {/* 訂單管理專屬導覽標籤列 */}
                         {viewMode === 'order' && (
-                            <div className="pb-4 flex gap-2">
-                                <div className="relative flex-1">
+                            <div className="pb-4 space-y-3">
+                                <div className="relative">
                                     <input type="text" placeholder="搜尋客戶或商品..." className="w-full bg-slate-100/50 rounded-xl py-2.5 px-10 text-xs font-bold outline-none focus:bg-white focus:ring-2 focus:ring-sky-100 transition-all shadow-inner" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                                     <div className="absolute left-3.5 top-3 text-slate-400"><Icon name="search" className="w-3.5 h-3.5" /></div>
                                 </div>
-                                <div className="relative">
-                                    <select className="appearance-none bg-sky-50 text-sky-600 pl-9 pr-8 py-2.5 rounded-xl text-xs font-black outline-none border border-sky-100 cursor-pointer active-scale" value={orderFilter} onChange={(e) => setOrderFilter(e.target.value)}>
-                                        {orderStatusList.map(status => <option key={status} value={status}>{status}</option>)}
-                                    </select>
-                                    <div className="absolute left-3 top-3 text-sky-400 pointer-events-none"><Icon name="filter" className="w-3.5 h-3.5" /></div>
-                                    <div className="absolute right-2.5 top-3 text-sky-400 pointer-events-none"><Icon name="down" className="w-3 h-3" /></div>
+                                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                                    {orderStatusList.map(status => (
+                                        <button 
+                                            key={status} 
+                                            onClick={() => setOrderFilter(status)}
+                                            className={`whitespace-nowrap px-4 py-1.5 rounded-full text-[10px] font-black transition-all border ${orderFilter === status ? 'bg-sky-500 text-white border-sky-500 shadow-md' : 'bg-white text-slate-400 border-slate-100 hover:border-sky-200 active-scale'}`}
+                                        >
+                                            {status}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
                         )}
@@ -174,7 +178,7 @@
                     <div className="p-4 space-y-3">
                         {items
                             .filter(i => i.stage === viewMode)
-                            .filter(i => orderFilter === '全部訂單' || i.status === orderFilter || viewMode === 'purchase')
+                            .filter(i => orderFilter === '全部' || i.status === orderFilter || viewMode === 'purchase')
                             .filter(i => i.customerName.includes(searchQuery) || i.productName.includes(searchQuery))
                             .map(item => (
                             <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative overflow-hidden active:bg-slate-50 transition-all">
@@ -184,7 +188,7 @@
                                     </div>
                                 )}
 
-                                <div className="flex justify-between items-start">
+                                <div className="flex justify-between items-start text-left">
                                     <div className="flex-1 pr-4">
                                         <h3 className="text-sm font-black text-slate-800">{item.customerName} <span className="text-sky-300 text-[10px]">●</span></h3>
                                         <p className="text-xs text-slate-400 mt-1 mb-4 leading-relaxed line-clamp-2 font-medium">{item.productName}</p>
@@ -211,7 +215,7 @@
                                                     value={item.status}
                                                     onChange={(e) => updateItemStatus(item.id, e.target.value)}
                                                 >
-                                                    {orderStatusList.filter(s => s !== '全部訂單').map(s => <option key={s} value={s}>{s}</option>)}
+                                                    {orderStatusList.filter(s => s !== '全部').map(s => <option key={s} value={s}>{s}</option>)}
                                                 </select>
                                                 <div className={`absolute right-2 top-2 pointer-events-none ${item.status === '已完成' ? 'text-emerald-400' : 'text-amber-400'}`}><Icon name="down" className="w-2.5 h-2.5" /></div>
                                             </div>
@@ -226,11 +230,11 @@
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 text-left">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
                                 <div className="flex justify-between items-center mb-8">
-                                    <h2 className="text-xl font-black italic text-sky-900">{isEditing ? '編輯項目' : '新增項目'}</h2>
+                                    <h2 className="text-xl font-black italic text-sky-900 leading-none">{isEditing ? '編輯項目' : '新增項目'}</h2>
                                     <button onClick={() => setShowModal(false)} className="text-slate-300 text-3xl leading-none">&times;</button>
                                 </div>
                                 <div className="space-y-6">
-                                    <div className="flex gap-4 text-left">
+                                    <div className="flex gap-4">
                                         <div className="flex-1">
                                             <p className="text-[10px] font-black text-slate-400 uppercase mb-3 ml-1">代墊人</p>
                                             <div className="flex gap-2">
@@ -240,11 +244,11 @@
                                             </div>
                                         </div>
                                         {viewMode === 'order' && (
-                                            <div className="flex-1 text-left">
+                                            <div className="flex-1">
                                                 <p className="text-[10px] font-black text-slate-400 uppercase mb-3 ml-1">狀態</p>
                                                 <div className="relative">
                                                     <select className="w-full bg-slate-50 p-3 rounded-xl text-xs font-black text-sky-600 outline-none border border-transparent appearance-none" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
-                                                        {orderStatusList.filter(s => s !== '全部訂單').map(s => <option key={s} value={s}>{s}</option>)}
+                                                        {orderStatusList.filter(s => s !== '全部').map(s => <option key={s} value={s}>{s}</option>)}
                                                     </select>
                                                     <div className="absolute right-3 top-3.5 text-sky-300 pointer-events-none"><Icon name="down" className="w-3.5 h-3.5" /></div>
                                                 </div>
