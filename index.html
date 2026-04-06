@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v3.0</title>
+    <title>LinTin 協作系統 v3.1</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -21,7 +21,6 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // 改用 SVG 圖示，看起來更專業
         const Icon = ({ name, className = "w-4 h-4" }) => {
             const icons = {
                 box: <path d="M21 8l-2-2H5L3 8v11a2 2 0 002 2h14a2 2 0 002-2V8zM5 8l1.5-1.5h11L19 8H5zm14 11H5V10h14v9zM9 12h6v2H9v-2z" />,
@@ -144,17 +143,31 @@
                                 <div className="flex justify-between items-start">
                                     <div className="flex-1 pr-4">
                                         <h3 className="text-sm font-black text-slate-800">{item.customerName} <span className="text-sky-300">●</span></h3>
-                                        <p className="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">{item.productName}</p>
+                                        <p className="text-xs text-slate-400 mt-1 mb-4 leading-relaxed line-clamp-2">{item.productName}</p>
                                         
-                                        {/* 向量風格編輯與刪除按鈕 */}
                                         <div className="flex gap-2">
                                             <button onClick={() => openEdit(item)} className="bg-slate-50 text-slate-400 p-2.5 rounded-xl hover:text-sky-600 hover:bg-sky-100 transition-all active-scale"><Icon name="edit" /></button>
                                             <button onClick={() => deleteItem(item.id)} className="bg-slate-50 text-slate-400 p-2.5 rounded-xl hover:text-red-500 hover:bg-red-50 transition-all active-scale"><Icon name="trash" /></button>
                                         </div>
                                     </div>
                                     
-                                    <div className="flex flex-col items-end gap-3">
-                                        <div className="font-black text-sky-700 text-sm italic tracking-tight">NT$ {Number(item.price).toLocaleString()}</div>
+                                    <div className="flex flex-col items-end gap-1">
+                                        <div className="font-black text-sky-700 text-sm italic tracking-tight mb-1">NT$ {Number(item.price).toLocaleString()}</div>
+                                        
+                                        {/* 新增：外幣金額與利潤顯示 */}
+                                        <div className="text-right space-y-0.5 mb-2">
+                                            {item.foreignPrice && item.currency !== 'NTD' && (
+                                                <p className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">
+                                                    {Number(item.foreignPrice).toLocaleString()} {item.currency}
+                                                </p>
+                                            )}
+                                            {item.fee && (
+                                                <p className="text-[10px] font-black text-emerald-500 italic">
+                                                    + {Number(item.fee).toLocaleString()}
+                                                </p>
+                                            )}
+                                        </div>
+
                                         {viewMode === 'purchase' ? (
                                             <button 
                                                 onClick={() => markAsBought(item.id)}
@@ -163,7 +176,7 @@
                                                 已買到
                                             </button>
                                         ) : (
-                                            <div className="text-[9px] font-black text-emerald-500 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">已完成採購</div>
+                                            <div className="text-[9px] font-black text-emerald-500 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">已採購</div>
                                         )}
                                     </div>
                                 </div>
@@ -175,7 +188,7 @@
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh] text-left">
                                 <div className="flex justify-between items-center mb-8">
-                                    <h2 className="text-xl font-black italic text-sky-900">{isEditing ? '編輯項目' : '新增項目'}</h2>
+                                    <h2 className="text-xl font-black italic text-sky-900 leading-none">{isEditing ? '編輯項目' : '新增項目'}</h2>
                                     <button onClick={() => setShowModal(false)} className="text-slate-300 text-3xl leading-none">&times;</button>
                                 </div>
                                 <div className="space-y-6">
