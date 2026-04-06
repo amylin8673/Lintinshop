@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v6.8</title>
+    <title>LinTin 協作系統 v6.9</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -203,43 +203,73 @@
                                     <button onClick={() => setShowModal(false)} className="text-slate-300 text-3xl leading-none">&times;</button>
                                 </div>
                                 <div className="space-y-6">
-                                    <div>
-                                        <div className="flex justify-between items-center mb-3 px-1">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase">分類 (長按刪除)</p>
-                                            <button onClick={() => {
-                                                const n = prompt("新標籤名稱：");
-                                                if(n && !categories.includes(n)) setCategories([...categories, n]);
-                                            }} className="text-[10px] font-black text-sky-500 bg-sky-50 px-2 py-1 rounded-lg">+ 新增</button>
+                                    {/* 分類與代墊人 */}
+                                    <div className="space-y-4">
+                                        <div>
+                                            <div className="flex justify-between items-center mb-3 px-1">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">分類標籤</p>
+                                                <button onClick={() => { const n = prompt("新標籤名稱："); if(n && !categories.includes(n)) setCategories([...categories, n]); }} className="text-[10px] font-black text-sky-500 bg-sky-50 px-2 py-1 rounded-lg">+ 新增</button>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {categories.map(cat => (
+                                                    <button key={cat} onMouseDown={() => handleLongPress(cat)} onTouchStart={() => handleLongPress(cat)} onClick={() => setFormData({...formData, category: cat})} className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all ${formData.category === cat ? 'bg-sky-100 text-sky-700 border border-sky-200' : 'bg-slate-50 text-slate-400'}`}>{cat}</button>
+                                                ))}
+                                            </div>
                                         </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {categories.map(cat => (
-                                                <button key={cat} 
-                                                    onMouseDown={() => handleLongPress(cat)} onMouseUp={() => clearTimeout(timerRef.current)}
-                                                    onTouchStart={() => handleLongPress(cat)} onTouchEnd={() => clearTimeout(timerRef.current)}
-                                                    onClick={() => setFormData({...formData, category: cat})} 
-                                                    className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all ${formData.category === cat ? 'bg-sky-100 text-sky-700 border border-sky-200' : 'bg-slate-50 text-slate-400'}`}>{cat}</button>
-                                            ))}
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase mb-3 px-1 tracking-wider">代墊人</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {payers.map(p => (
+                                                    <button key={p} onClick={() => setFormData({...formData, payer: p})} className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all ${formData.payer === p ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-400'}`}>{p}</button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
+
+                                    {/* 客戶商品 */}
                                     <div className="grid grid-cols-2 gap-4">
-                                        <input placeholder="客戶" className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none" value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} />
-                                        <input placeholder="商品" className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none" value={formData.productName} onChange={e => setFormData({...formData, productName: e.target.value})} />
+                                        <div className="space-y-1.5">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase px-1">客戶名稱</p>
+                                            <input placeholder="輸入名稱" className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none border border-transparent focus:border-slate-200" value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase px-1">商品名稱</p>
+                                            <input placeholder="輸入商品" className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none border border-transparent focus:border-slate-200" value={formData.productName} onChange={e => setFormData({...formData, productName: e.target.value})} />
+                                        </div>
                                     </div>
-                                    <div className="bg-amber-50/50 p-5 rounded-[32px] space-y-4">
-                                        <select className="w-full bg-white py-3 px-3.5 rounded-xl text-xs font-black text-amber-600 outline-none border border-amber-100" value={formData.currency} onChange={(e) => setFormData({...formData, currency: e.target.value, foreignPrice: ''})}>
-                                            {currencies.map(c => <option key={c} value={c}>{c}</option>)}
-                                        </select>
-                                        <input type="number" placeholder="外幣金額" className="w-full bg-white py-4 px-4 rounded-2xl outline-none font-black text-sm text-amber-600 border border-amber-100" value={formData.foreignPrice} onChange={e => setFormData({...formData, foreignPrice: e.target.value, price: Math.round(e.target.value * rates[formData.currency])})} />
+
+                                    {/* 核心金額輸入區 - 標籤外置優化版 */}
+                                    <div className="bg-slate-50/50 p-5 rounded-[32px] space-y-5 border border-slate-100">
+                                        <div className="space-y-1.5">
+                                            <p className="text-[10px] font-black text-amber-600/70 uppercase px-1 flex justify-between">
+                                                <span>外幣金額</span>
+                                                <span>匯率 1:{rates[formData.currency]?.toFixed(3)}</span>
+                                            </p>
+                                            <div className="flex gap-2">
+                                                <select className="bg-white py-3 px-3 rounded-xl text-xs font-black text-amber-600 outline-none border border-amber-100" value={formData.currency} onChange={(e) => setFormData({...formData, currency: e.target.value, foreignPrice: ''})}>
+                                                    {currencies.map(c => <option key={c} value={c}>{c}</option>)}
+                                                </select>
+                                                <input type="number" placeholder="0.00" className="flex-1 bg-white py-4 px-4 rounded-2xl outline-none font-black text-sm text-amber-600 border border-amber-100" value={formData.foreignPrice} onChange={e => setFormData({...formData, foreignPrice: e.target.value, price: Math.round(e.target.value * rates[formData.currency])})} />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4 pt-1 border-t border-slate-100 mt-2">
+                                            <div className="space-y-1.5">
+                                                <p className="text-[10px] font-black text-sky-600/70 uppercase px-1">台幣成本</p>
+                                                <input type="number" placeholder="自動計算" className="w-full bg-white py-4 px-4 rounded-2xl font-black text-sm text-sky-600 outline-none border border-sky-100" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <p className="text-[10px] font-black text-emerald-600/70 uppercase px-1">預期利潤</p>
+                                                <input type="number" placeholder="0" className="w-full bg-white py-4 px-4 rounded-2xl font-black text-sm text-emerald-600 outline-none border border-emerald-100" value={formData.fee} onChange={e => setFormData({...formData, fee: e.target.value})} />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <input type="number" placeholder="台幣成本" className="w-full bg-sky-50 py-4 px-4 rounded-2xl font-black text-sm text-sky-600 outline-none" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
-                                        <input type="number" placeholder="預期利潤" className="w-full bg-emerald-50 py-4 px-4 rounded-2xl font-black text-sm text-emerald-600 outline-none" value={formData.fee} onChange={e => setFormData({...formData, fee: e.target.value})} />
-                                    </div>
+
                                     <button onClick={() => {
                                         if (isEditing) { setItems(items.map(i => i.id === isEditing ? {...formData, id: isEditing} : i)); setIsEditing(null); }
                                         else { setItems([{ id: Date.now(), ...formData, stage: 'purchase' }, ...items]); }
                                         setShowModal(false); setFormData(initialForm);
-                                    }} className="w-full bg-sky-600 text-white py-5 rounded-3xl font-black shadow-xl active-scale">儲存項目</button>
+                                    }} className="w-full bg-sky-600 text-white py-5 rounded-3xl font-black shadow-xl active-scale text-base">儲存項目</button>
                                 </div>
                             </div>
                         </div>
