@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v3.2</title>
+    <title>LinTin 協作系統 v3.3</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -43,7 +43,7 @@
             const [isEditing, setIsEditing] = React.useState(null);
             const [items, setItems] = React.useState([]);
             
-            // 財務數據狀態
+            // 財務數據
             const [fundSettings, setFundSettings] = React.useState({ amount: 1000000, currency: 'KRW' });
             const [pendingFinance, setPendingFinance] = React.useState(0);
             const [totalProfit, setTotalProfit] = React.useState(0);
@@ -69,8 +69,9 @@
             const deleteItem = (id) => {
                 const itemToDelete = items.find(i => i.id === id);
                 if (confirm("確定要刪除這個項目嗎？")) {
-                    // 如果刪除的是已買到的項目，同步扣除財務數據
+                    // 如果刪除已買到的項目，反向同步財務數據
                     if (itemToDelete.stage === 'order') {
+                        setFundSettings(prev => ({ ...prev, amount: Number(prev.amount) + (Number(itemToDelete.price) / exchangeRates[prev.currency]) }));
                         setPendingFinance(prev => prev - Number(itemToDelete.price || 0));
                         setTotalProfit(prev => prev - Number(itemToDelete.fee || 0));
                     }
@@ -84,13 +85,26 @@
                 setShowModal(true);
             };
 
-            // 核心功能：標記已買到並同步上方面板
+            // 核心邏輯：點擊已買到，同步財務面板
             const markAsBought = (id) => {
                 setItems(items.map(item => {
                     if (item.id === id) {
-                        // 同步財務數據
-                        setPendingFinance(prev => prev + Number(item.price || 0));
-                        setTotalProfit(prev => prev + Number(item.fee || 0));
+                        const itemPriceTWD = Number(item.price || 0);
+                        const itemFeeTWD = Number(item.fee || 0);
+                        
+                        // 1. 扣除購物金 (依據購物金當前幣別換算)
+                        const deductionInFundCurrency = itemPriceTWD / exchangeRates[fundSettings.currency];
+                        setFundSettings(prev => ({
+                            ...prev,
+                            amount: Math.max(0, Number(prev.amount) - deductionInFundCurrency)
+                        }));
+
+                        // 2. 增加待收帳款
+                        setPendingFinance(prev => prev + itemPriceTWD);
+
+                        // 3. 增加累積利潤
+                        setTotalProfit(prev => prev + itemFeeTWD);
+
                         return { ...item, stage: 'order' };
                     }
                     return item;
@@ -123,12 +137,12 @@
                             </button>
                         </div>
 
-                        {/* 上方財務面板 - 自動同步 */}
+                        {/* 財務看板 - 全自動連動 */}
                         <div className="grid grid-cols-3 gap-2 mb-4">
                             <div className="col-span-1 bg-white p-2 rounded-2xl border border-sky-100 shadow-sm">
                                 <p className="text-[8px] font-black text-slate-400 uppercase mb-1">購物金餘額</p>
                                 <div className="flex items-center gap-1">
-                                    <input type="number" className="w-full text-[11px] font-black text-sky-600 bg-transparent outline-none" value={fundSettings.amount} onChange={(e) => setFundSettings({...fundSettings, amount: e.target.value})} />
+                                    <input type="number" className="w-full text-[11px] font-black text-sky-600 bg-transparent outline-none" value={Math.round(fundSettings.amount)} onChange={(e) => setFundSettings({...fundSettings, amount: e.target.value})} />
                                     <div className="relative flex items-center">
                                         <select className="text-[9px] font-black text-sky-400 bg-sky-50 py-0.5 px-1.5 rounded-md outline-none pr-3 cursor-pointer" value={fundSettings.currency} onChange={(e) => setFundSettings({ ...fundSettings, currency: e.target.value })}>
                                             {currencies.map(c => <option key={c} value={c}>{c}</option>)}
@@ -139,11 +153,11 @@
                             </div>
                             <div className="bg-white p-2 rounded-2xl border border-sky-100 shadow-sm">
                                 <p className="text-[8px] font-black text-slate-400 mb-1 uppercase">待收帳款</p>
-                                <p className="text-[11px] font-black text-amber-500 italic truncate">NT$ {pendingFinance.toLocaleString()}</p>
+                                <p className="text-[11px] font-black text-amber-500 italic truncate font-mono">NT$ {pendingFinance.toLocaleString()}</p>
                             </div>
                             <div className="bg-white p-2 rounded-2xl border border-sky-100 shadow-sm">
                                 <p className="text-[8px] font-black text-slate-400 mb-1 uppercase">累積利潤</p>
-                                <p className="text-[11px] font-black text-emerald-500 italic truncate">NT$ {totalProfit.toLocaleString()}</p>
+                                <p className="text-[11px] font-black text-emerald-500 italic truncate font-mono">NT$ {totalProfit.toLocaleString()}</p>
                             </div>
                         </div>
 
@@ -159,7 +173,7 @@
 
                     <div className="p-4 space-y-3 text-left">
                         {items.filter(i => i.stage === viewMode).map(item => (
-                            <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative overflow-hidden">
+                            <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative overflow-hidden transition-all">
                                 {item.payer && (
                                     <div className={`absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white rounded-bl-xl shadow-sm ${item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-orange-400'}`}>
                                         {item.payer}
@@ -168,7 +182,7 @@
 
                                 <div className="flex justify-between items-start">
                                     <div className="flex-1 pr-4">
-                                        <h3 className="text-sm font-black text-slate-800">{item.customerName} <span className="text-sky-300">●</span></h3>
+                                        <h3 className="text-sm font-black text-slate-800 leading-tight">{item.customerName} <span className="text-sky-300">●</span></h3>
                                         <p className="text-xs text-slate-400 mt-1 mb-4 leading-relaxed line-clamp-2">{item.productName}</p>
                                         
                                         <div className="flex gap-2">
