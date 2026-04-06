@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v6.0</title>
+    <title>LinTin 協作系統 v6.1</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -71,10 +71,7 @@
                 finally { setTimeout(() => setIsUpdatingRates(false), 800); }
             };
 
-            React.useEffect(() => {
-                fetchRates();
-                localStorage.setItem('lintin_payers', JSON.stringify(payers));
-            }, [payers]);
+            React.useEffect(() => { fetchRates(); localStorage.setItem('lintin_payers', JSON.stringify(payers)); }, [payers]);
 
             const addPayer = () => {
                 const name = prompt("請輸入新的代墊人姓名：");
@@ -98,11 +95,7 @@
                 setFormData(initialForm);
             };
 
-            const deleteItem = (id) => {
-                if (confirm("確定要刪除這個商品嗎？")) {
-                    setItems(items.filter(item => item.id !== id));
-                }
-            };
+            const deleteItem = (id) => { if (confirm("確定要刪除這個商品嗎？")) setItems(items.filter(item => item.id !== id)); };
 
             const markAsBought = (id) => {
                 setItems(items.map(item => {
@@ -188,11 +181,14 @@
                                 <div className={`absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white rounded-bl-xl ${getPayerColor(item.payer)}`}>{item.payer}</div>
                                 <div className="flex justify-between items-start">
                                     <div className="flex-1 pr-4">
-                                        <h3 className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-wider">{item.customerName}</h3>
-                                        {/* 商品名稱底色優化區塊 */}
-                                        <div className="inline-block bg-sky-50/70 border border-sky-100/50 px-3 py-1.5 rounded-xl mb-4">
-                                            <p className="text-xs text-sky-900/70 font-black leading-tight">{item.productName}</p>
+                                        {/* 客戶名稱放大 */}
+                                        <h3 className="text-base font-black text-slate-900 mb-1.5 ml-1">{item.customerName}</h3>
+                                        
+                                        {/* 商品名稱換成淡黃色底色並置於下方 */}
+                                        <div className="inline-block bg-amber-50 border border-amber-100/50 px-3 py-1.5 rounded-xl mb-4">
+                                            <p className="text-[11px] text-amber-900/80 font-black leading-tight">{item.productName}</p>
                                         </div>
+                                        
                                         <div className="flex gap-2">
                                             <button onClick={() => openEdit(item)} className="bg-slate-50 text-slate-400 p-2.5 rounded-xl active-scale"><Icon name="edit" /></button>
                                             <button onClick={() => deleteItem(item.id)} className="bg-slate-50 text-slate-400 p-2.5 rounded-xl active-scale"><Icon name="trash" /></button>
@@ -203,14 +199,13 @@
                                             {item.foreignPrice && item.currency !== 'NTD' && <p className="text-[9px] text-slate-300 uppercase mb-0.5">{Number(item.foreignPrice).toLocaleString()} {item.currency}</p>}
                                             <p>NT$ {Number(item.price).toLocaleString()}</p>
                                         </div>
-                                        {viewMode === 'purchase' && <button onClick={() => markAsBought(item.id)} className="mt-3 bg-sky-600 text-white text-[10px] font-black px-4 py-2.5 rounded-xl shadow-lg shadow-sky-100 active-scale border border-sky-500">已買到</button>}
+                                        {viewMode === 'purchase' && <button onClick={() => markAsBought(item.id)} className="mt-4 bg-sky-600 text-white text-[10px] font-black px-4 py-2.5 rounded-xl shadow-lg shadow-sky-100 active-scale border border-sky-500">已買到</button>}
                                     </div>
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    {/* Modal 保持不變 (具備標籤與正確初始值) */}
                     {showModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 text-left">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
