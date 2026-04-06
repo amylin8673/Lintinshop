@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v2.3</title>
+    <title>LinTin 協作系統 v2.4</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -35,17 +35,15 @@
             // 購物金狀態
             const [fundSettings, setFundSettings] = React.useState({ amount: 1000000, currency: 'KRW' });
 
-            const exchangeRates = { KRW: 0.024, JPY: 0.21, HKD: 4.1, THB: 0.9, AUD: 21.2, NTD: 1 };
             const currencies = ['KRW', 'JPY', 'THB', 'HKD', 'AUD', 'NTD'];
+            const exchangeRates = { KRW: 0.024, JPY: 0.21, HKD: 4.1, THB: 0.9, AUD: 21.2, NTD: 1 };
 
             const initialForm = { customerName: '', productName: '', price: '', fee: '', payer: '琳', currency: 'KRW', foreignPrice: '' };
             const [formData, setFormData] = React.useState(initialForm);
 
-            // --- 核心功能：下拉選單切換幣別並換算 ---
+            // --- 修正：僅切換幣別，不連動金額 ---
             const handleCurrencyChange = (newCurrency) => {
-                const amountInTWD = fundSettings.amount * exchangeRates[fundSettings.currency];
-                const nextAmount = Math.round(amountInTWD / exchangeRates[newCurrency]);
-                setFundSettings({ amount: nextAmount, currency: newCurrency });
+                setFundSettings({ ...fundSettings, currency: newCurrency });
             };
 
             const saveItem = () => {
@@ -62,7 +60,7 @@
                         <div className="w-full max-w-sm bg-white rounded-[40px] p-10 shadow-xl text-center">
                             <h1 className="text-2xl font-black text-sky-900 mb-6 italic">LinTin Login</h1>
                             <input type="text" placeholder="代碼" className="w-full bg-slate-50 rounded-2xl py-4 px-6 mb-4 font-black text-sky-600 outline-none" value={tempCode} onChange={(e) => setTempCode(e.target.value)} />
-                            <button onClick={() => { setInviteCode(tempCode.toUpperCase()); localStorage.setItem('lintin_invite_code', tempCode.toUpperCase()); }} className="w-full bg-sky-500 text-white py-4 rounded-2xl font-black shadow-lg transition-transform active:scale-95">進入系統</button>
+                            <button onClick={() => { setInviteCode(tempCode.toUpperCase()); localStorage.setItem('lintin_invite_code', tempCode.toUpperCase()); }} className="w-full bg-sky-500 text-white py-4 rounded-2xl font-black shadow-lg">進入系統</button>
                         </div>
                     </div>
                 );
@@ -74,12 +72,12 @@
                         <div className="flex justify-between items-center mb-4">
                             <div className="flex items-center gap-2">
                                 <div className="bg-sky-500 p-2 rounded-xl text-white"><Icon name="box" /></div>
-                                <h1 className="text-xl font-black text-sky-900 italic">LinTin</h1>
+                                <h1 className="text-xl font-black text-sky-900 italic leading-none">LinTin</h1>
                             </div>
                             <button onClick={() => setShowModal(true)} className="bg-sky-600 text-white p-2.5 rounded-xl shadow-lg active:scale-90 transition-all">＋</button>
                         </div>
 
-                        {/* 數據欄位：購物金現在是輸入框 + 下拉選單 */}
+                        {/* 數據欄位：金額與幣別獨立 */}
                         <div className="grid grid-cols-3 gap-2 mb-4">
                             <div className="col-span-1 bg-white p-2 rounded-2xl border border-sky-100 shadow-sm">
                                 <p className="text-[8px] font-black text-slate-400 uppercase mb-1">購物金餘額</p>
@@ -143,8 +141,8 @@
                                         ))}
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <input placeholder="客戶名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none focus:ring-1 ring-sky-200" value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} />
-                                        <input placeholder="商品名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none focus:ring-1 ring-sky-200" value={formData.productName} onChange={e => setFormData({...formData, productName: e.target.value})} />
+                                        <input placeholder="客戶名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none" value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} />
+                                        <input placeholder="商品名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none" value={formData.productName} onChange={e => setFormData({...formData, productName: e.target.value})} />
                                     </div>
                                     <div className="bg-amber-50 p-5 rounded-3xl space-y-4">
                                         <select 
@@ -166,7 +164,7 @@
                                         <input type="number" placeholder="台幣成本" className="w-full bg-sky-50 p-4 rounded-2xl font-black text-sm text-sky-600 outline-none" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
                                         <input type="number" placeholder="預期利潤" className="w-full bg-emerald-50 p-4 rounded-2xl font-black text-sm text-emerald-600 outline-none" value={formData.fee} onChange={e => setFormData({...formData, fee: e.target.value})} />
                                     </div>
-                                    <button onClick={saveItem} className="w-full bg-sky-600 text-white py-5 rounded-3xl font-black shadow-xl active:scale-95 transition-all">確認新增</button>
+                                    <button onClick={saveItem} className="w-full bg-sky-600 text-white py-5 rounded-3xl font-black shadow-xl">確認新增</button>
                                 </div>
                             </div>
                         </div>
