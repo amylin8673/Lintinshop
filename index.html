@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v7.5</title>
+    <title>LinTin 協作系統 v7.6</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -36,33 +36,34 @@
             const [showModal, setShowModal] = React.useState(false);
             const [showCheckModal, setShowCheckModal] = React.useState(false);
             const [showTagModal, setShowTagModal] = React.useState(false);
-            
             const [isEditing, setIsEditing] = React.useState(null);
             const [checkingItem, setCheckingItem] = React.useState(null);
             const [lastFive, setLastFive] = React.useState('');
             
-            // 標籤狀態：初始化從 localStorage 讀取
-            const [categories, setCategories] = React.useState(() => {
-                const saved = localStorage.getItem('lintin_cats');
-                return saved ? JSON.parse(saved) : ['預設', '服飾', '美妝'];
-            });
+            const [categories, setCategories] = React.useState(() => JSON.parse(localStorage.getItem('lintin_cats')) || ['預設', '服飾', '美妝']);
             const [newTagName, setNewTagName] = React.useState('');
             const [activeCategory, setActiveCategory] = React.useState('全部');
-            
             const orderStatuses = ['待付款', '已匯款', '待查帳', '已出貨', '完成'];
             const [activeStatus, setActiveStatus] = React.useState('全部');
 
             const rates = { KRW: 0.024, JPY: 0.21, HKD: 4.1, THB: 0.9, AUD: 21.2, NTD: 1 };
             const currencies = ['KRW', 'JPY', 'THB', 'HKD', 'AUD', 'NTD'];
             
-            const initialForm = { 
-                customerName: '', productName: '', price: '', fee: '', 
-                payer: '琳', currency: 'KRW', foreignPrice: '', 
-                category: '預設', orderStatus: '待付款', accountDigits: '' 
-            };
+            const initialForm = { customerName: '', productName: '', price: '', fee: '', payer: '琳', currency: 'KRW', foreignPrice: '', category: '預設', orderStatus: '待付款', accountDigits: '' };
             const [formData, setFormData] = React.useState(initialForm);
 
-            // 當標籤清單改變時同步到本地儲存
+            // 統計數據邏輯
+            const stats = React.useMemo(() => {
+                const pendingCollection = items.filter(i => i.stage === 'order' && i.orderStatus !== '完成')
+                                               .reduce((sum, i) => sum + Number(i.price || 0), 0);
+                const totalProfit = items.reduce((sum, i) => sum + Number(i.fee || 0), 0);
+                return {
+                    credit: 0, // 購物金餘額（可根據需要串接邏輯）
+                    collection: pendingCollection,
+                    profit: totalProfit
+                };
+            }, [items]);
+
             React.useEffect(() => {
                 localStorage.setItem('lintin_cats', JSON.stringify(categories));
             }, [categories]);
@@ -94,7 +95,6 @@
 
             return (
                 <div className="min-h-screen pb-10 text-left">
-                    {/* Header */}
                     <header className="bg-white/90 backdrop-blur-md border-b border-sky-50 sticky top-0 z-30 shadow-sm">
                         <div className="px-5 pt-4">
                             <div className="flex justify-between items-center mb-4">
@@ -104,6 +104,23 @@
                                 </div>
                                 <button onClick={() => { setIsEditing(null); setFormData(initialForm); setShowModal(true); }} className="bg-sky-600 text-white p-2.5 rounded-xl shadow-lg active-scale">＋</button>
                             </div>
+
+                            {/* 復原的三個數據方框 */}
+                            <div className="grid grid-cols-3 gap-3 mb-5">
+                                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase mb-1">購物金餘額</p>
+                                    <p className="text-sm font-black text-slate-900 leading-none">NT$ {stats.credit.toLocaleString()}</p>
+                                </div>
+                                <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100">
+                                    <p className="text-[9px] font-black text-amber-600/70 uppercase mb-1">代收款項</p>
+                                    <p className="text-sm font-black text-amber-700 leading-none">NT$ {stats.collection.toLocaleString()}</p>
+                                </div>
+                                <div className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100">
+                                    <p className="text-[9px] font-black text-emerald-600/70 uppercase mb-1">預期利潤</p>
+                                    <p className="text-sm font-black text-emerald-700 leading-none">NT$ {stats.profit.toLocaleString()}</p>
+                                </div>
+                            </div>
+
                             <div className="flex mb-2">
                                 {['purchase', 'order'].map(m => (
                                     <button key={m} onClick={() => setViewMode(m)} className={`flex-1 pb-3 text-xs font-black relative ${viewMode === m ? 'text-sky-600' : 'text-slate-400'}`}>
@@ -129,7 +146,7 @@
                         </div>
                     </header>
 
-                    {/* List */}
+                    {/* 卡片清單 */}
                     <div className="p-4 space-y-4">
                         {filteredItems.map(item => (
                             <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative overflow-hidden">
@@ -164,7 +181,7 @@
                         ))}
                     </div>
 
-                    {/* Modal: Add/Edit */}
+                    {/* Modal: 新增/編輯 */}
                     {showModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 text-left text-slate-900">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh] no-scrollbar">
@@ -176,8 +193,7 @@
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
                                             <p className="text-[10px] font-black text-slate-400 uppercase px-1 tracking-wider">商品分類</p>
-                                            <select className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none appearance-none border-2 border-transparent focus:border-sky-100" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
-                                                {/* 這裡連動自定義標籤清單 */}
+                                            <select className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none border-2 border-transparent focus:border-sky-100 appearance-none" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
                                                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
                                             </select>
                                         </div>
@@ -190,18 +206,16 @@
                                             </div>
                                         </div>
                                     </div>
-
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
                                             <p className="text-[10px] font-black text-slate-400 uppercase px-1 tracking-wider">客戶名稱</p>
-                                            <input placeholder="名稱" className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none border-2 border-transparent focus:border-sky-100" value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} />
+                                            <input placeholder="名稱" className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none" value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} />
                                         </div>
                                         <div className="space-y-1.5">
                                             <p className="text-[10px] font-black text-slate-400 uppercase px-1 tracking-wider">商品名稱</p>
-                                            <input placeholder="商品名稱" className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none border-2 border-transparent focus:border-sky-100" value={formData.productName} onChange={e => setFormData({...formData, productName: e.target.value})} />
+                                            <input placeholder="商品名稱" className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none" value={formData.productName} onChange={e => setFormData({...formData, productName: e.target.value})} />
                                         </div>
                                     </div>
-
                                     <div className="bg-slate-50/50 p-5 rounded-[32px] space-y-5 border border-slate-100">
                                         <div className="space-y-1.5">
                                             <p className="text-[10px] font-black text-amber-600/70 uppercase px-1 flex justify-between">
@@ -221,15 +235,14 @@
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-1.5">
                                                 <p className="text-[10px] font-black text-sky-600/70 uppercase px-1 tracking-wider">台幣成本</p>
-                                                <input type="number" placeholder="自動計算" className="w-full bg-white py-4 px-4 rounded-2xl font-black text-sm text-sky-600 outline-none border border-sky-100" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
+                                                <input type="number" placeholder="自動計算" className="w-full bg-white py-4 px-4 rounded-2xl font-black text-sm text-sky-600 outline-none" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <p className="text-[10px] font-black text-emerald-600/70 uppercase px-1 tracking-wider">預期利潤</p>
-                                                <input type="number" placeholder="0" className="w-full bg-white py-4 px-4 rounded-2xl font-black text-sm text-emerald-600 outline-none border border-emerald-100" value={formData.fee} onChange={e => setFormData({...formData, fee: e.target.value})} />
+                                                <input type="number" placeholder="0" className="w-full bg-white py-4 px-4 rounded-2xl font-black text-sm text-emerald-600 outline-none" value={formData.fee} onChange={e => setFormData({...formData, fee: e.target.value})} />
                                             </div>
                                         </div>
                                     </div>
-
                                     <button onClick={() => {
                                         if (isEditing) setItems(items.map(i => i.id === isEditing ? {...formData, id: isEditing} : i));
                                         else setItems([{ id: Date.now(), ...formData, stage: 'purchase' }, ...items]);
@@ -240,7 +253,7 @@
                         </div>
                     )}
 
-                    {/* Modal: Tag Manager */}
+                    {/* Modal: 標籤管理 */}
                     {showTagModal && (
                         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-6 text-left">
                             <div className="bg-white w-full max-w-sm rounded-[40px] p-8 shadow-2xl">
@@ -250,24 +263,13 @@
                                 </div>
                                 <div className="flex gap-2 mb-6">
                                     <input placeholder="新標籤名稱" className="flex-1 bg-slate-50 py-3 px-4 rounded-xl font-bold text-sm outline-none border-2 border-transparent focus:border-sky-100" value={newTagName} onChange={e => setNewTagName(e.target.value)} />
-                                    <button onClick={() => { 
-                                        if(newTagName && !categories.includes(newTagName)) { 
-                                            setCategories([...categories, newTagName]); 
-                                            setNewTagName(''); 
-                                        } 
-                                    }} className="bg-sky-500 text-white px-4 rounded-xl font-black active-scale shadow-md">新增</button>
+                                    <button onClick={() => { if(newTagName && !categories.includes(newTagName)) { setCategories([...categories, newTagName]); setNewTagName(''); } }} className="bg-sky-500 text-white px-4 rounded-xl font-black active-scale shadow-md">新增</button>
                                 </div>
                                 <div className="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
                                     {categories.map(tag => (
-                                        <div key={tag} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                        <div key={tag} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
                                             <span className="font-black text-slate-700 text-sm">{tag}</span>
-                                            {tag !== '預設' && (
-                                                <button onClick={() => {
-                                                    const updated = categories.filter(c => c !== tag);
-                                                    setCategories(updated);
-                                                    if (activeCategory === tag) setActiveCategory('全部');
-                                                }} className="text-rose-400 p-1 active-scale"><Icon name="trash" /></button>
-                                            )}
+                                            {tag !== '預設' && <button onClick={() => setCategories(categories.filter(c => c !== tag))} className="text-rose-400 p-1 active-scale"><Icon name="trash" /></button>}
                                         </div>
                                     ))}
                                 </div>
@@ -275,10 +277,10 @@
                         </div>
                     )}
 
-                    {/* Modal: Account Check */}
+                    {/* Modal: 核對帳號 */}
                     {showCheckModal && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-6 text-left">
-                            <div className="bg-white w-full max-xs rounded-[32px] p-8 shadow-2xl text-center">
+                            <div className="bg-white w-full max-w-xs rounded-[32px] p-8 shadow-2xl text-center">
                                 <h3 className="text-lg font-black text-slate-900 mb-6">請輸入帳號後五碼</h3>
                                 <input type="text" maxLength="5" placeholder="00000" className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-black text-2xl text-center text-indigo-600 outline-none border-2 border-transparent focus:border-indigo-100 mb-6" value={lastFive} onChange={e => setLastFive(e.target.value)} autoFocus />
                                 <div className="flex gap-3">
