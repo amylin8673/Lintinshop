@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v4.2</title>
+    <title>LinTin 協作系統 v4.3</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -86,7 +86,6 @@
             };
 
             const saveBankCode = () => {
-                // 輸入後五碼點擊確認，自動跳到「待查帳」
                 setItems(items.map(item => 
                     item.id === currentBankItem.id 
                     ? { ...item, bankLastFive: bankCode, status: '待查帳' } 
@@ -221,7 +220,7 @@
                                         <div className="flex flex-wrap items-center gap-2 mb-1">
                                             <h3 className="text-sm font-black text-slate-800">{item.customerName}</h3>
                                             {item.bankLastFive && (
-                                                <span className="bg-slate-100 text-slate-500 text-[8px] px-2 py-0.5 rounded-lg font-bold">
+                                                <span className="bg-rose-50 text-rose-400 text-[8px] px-2 py-0.5 rounded-lg font-bold">
                                                     帳號後五碼：{item.bankLastFive}
                                                 </span>
                                             )}
