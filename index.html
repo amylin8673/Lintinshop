@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v8.4</title>
+    <title>LinTin 協作系統 v8.6</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -14,7 +14,6 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .active-scale:active { transform: scale(0.95); }
         input { user-select: text; }
-        select { -webkit-appearance: none; } /* 讓 iPad 上的 select 樣式更統一 */
     </style>
 </head>
 <body>
@@ -42,6 +41,7 @@
             const [checkingItem, setCheckingItem] = React.useState(null);
             const [lastFive, setLastFive] = React.useState('');
             
+            // 標籤清單從 localStorage 讀取
             const [categories, setCategories] = React.useState(() => JSON.parse(localStorage.getItem('lintin_cats')) || ['預設', '服飾', '美妝']);
             const orderStatuses = ['全部狀態', '待付款', '已匯款', '待查帳', '已出貨', '完成'];
             const [activeCategory, setActiveCategory] = React.useState('全部');
@@ -52,8 +52,11 @@
 
             const [creditData, setCreditData] = React.useState(() => JSON.parse(localStorage.getItem('lintin_credit')) || { ntdAmount: 0, currency: 'KRW', foreignAmount: 0 });
 
-            const initialForm = { customerName: '', productName: '', price: '', fee: '', payer: '無', currency: 'KRW', foreignPrice: '', category: categories[0], orderStatus: '待付款', accountDigits: '' };
+            const initialForm = { customerName: '', productName: '', price: '', fee: '', payer: '無', currency: 'KRW', foreignPrice: '', category: '預設', orderStatus: '待付款', accountDigits: '' };
             const [formData, setFormData] = React.useState(initialForm);
+
+            React.useEffect(() => { localStorage.setItem('lintin_cats', JSON.stringify(categories)); }, [categories]);
+            React.useEffect(() => { localStorage.setItem('lintin_credit', JSON.stringify(creditData)); }, [creditData]);
 
             const stats = React.useMemo(() => {
                 const pending = items.filter(i => i.stage === 'order' && i.orderStatus !== '完成').reduce((sum, i) => sum + Number(i.price || 0), 0);
@@ -61,8 +64,19 @@
                 return { collection: pending, profit: profit };
             }, [items]);
 
-            React.useEffect(() => { localStorage.setItem('lintin_cats', JSON.stringify(categories)); }, [categories]);
-            React.useEffect(() => { localStorage.setItem('lintin_credit', JSON.stringify(creditData)); }, [creditData]);
+            const handleSave = () => {
+                // 重點：如果輸入的是新標籤，自動存入 categories
+                if (formData.category && !categories.includes(formData.category)) {
+                    setCategories([...categories, formData.category]);
+                }
+
+                if (isEditing) {
+                    setItems(items.map(i => i.id === isEditing ? {...formData, id: isEditing} : i));
+                } else {
+                    setItems([{ id: Date.now(), ...formData, stage: 'purchase' }, ...items]);
+                }
+                setShowModal(false);
+            };
 
             const handleStatusClick = (item) => {
                 const flow = ['待付款', '已匯款', '待查帳', '已出貨', '完成'];
@@ -72,12 +86,6 @@
                     const idx = flow.indexOf(item.orderStatus);
                     if (idx < flow.length - 1) setItems(items.map(i => i.id === item.id ? {...i, orderStatus: flow[idx + 1]} : i));
                 }
-            };
-
-            const getPayerColor = (payer) => {
-                if (payer === '璇') return 'bg-sky-400';
-                if (payer === '琳') return 'bg-fuchsia-400';
-                return 'bg-slate-400';
             };
 
             return (
@@ -132,9 +140,7 @@
                             ) : (
                                 <>
                                     {orderStatuses.map(status => (
-                                        <button key={status} onClick={() => setActiveStatus(status)} className={`px-4 py-1.5 rounded-full text-[10px] font-black whitespace-nowrap ${activeStatus === status ? 'bg-indigo-500 text-white shadow-md' : 'bg-slate-100 text-slate-400'}`}>
-                                            {status}
-                                        </button>
+                                        <button key={status} onClick={() => setActiveStatus(status)} className={`px-4 py-1.5 rounded-full text-[10px] font-black whitespace-nowrap ${activeStatus === status ? 'bg-indigo-500 text-white shadow-md' : 'bg-slate-100 text-slate-400'}`}>{status}</button>
                                     ))}
                                 </>
                             )}
@@ -150,7 +156,7 @@
                             return matchStage && matchFilter;
                         }).map(item => (
                             <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative overflow-hidden">
-                                <div className={`absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white rounded-bl-xl ${getPayerColor(item.payer)}`}>{item.payer}</div>
+                                <div className={`absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white rounded-bl-xl ${item.payer === '璇' ? 'bg-sky-400' : item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-slate-400'}`}>{item.payer}</div>
                                 <div className="flex justify-between items-start">
                                     <div className="flex-1 pr-2">
                                         <div className="flex items-center gap-2 mb-1">
@@ -177,24 +183,25 @@
                         ))}
                     </div>
 
-                    {/* Modal: 新增/編輯項目 - 修正分類標籤選單 */}
+                    {/* 重點：新增視窗的分類標籤改為「可輸入」 */}
                     {showModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 text-left">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh] no-scrollbar">
                                 <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black italic text-sky-900">{isEditing ? '編輯項目' : '新增項目'}</h2><button onClick={() => setShowModal(false)} className="text-slate-300 text-3xl leading-none">&times;</button></div>
                                 <div className="space-y-5">
                                     <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-1.5"><p className="text-[10px] font-black text-slate-400 px-1">分類標籤</p>
-                                            <div className="relative">
-                                                <select className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none border-2 border-transparent focus:border-sky-100" 
-                                                    value={formData.category} 
-                                                    onChange={e => setFormData({...formData, category: e.target.value})}
-                                                >
-                                                    {/* 這裡會動態抓取所有自定義標籤 */}
-                                                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                                                </select>
-                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300 text-[10px]">▼</div>
-                                            </div>
+                                        <div className="space-y-1.5 relative"><p className="text-[10px] font-black text-slate-400 px-1">分類標籤 (可自訂輸入)</p>
+                                            {/* 使用 datalist 讓 input 既可以輸入新標籤，也可以從選單挑選 */}
+                                            <input 
+                                                list="tag-options"
+                                                placeholder="輸入或選擇..."
+                                                className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-bold text-sm outline-none border-2 border-transparent focus:border-sky-500/20" 
+                                                value={formData.category} 
+                                                onChange={e => setFormData({...formData, category: e.target.value})}
+                                            />
+                                            <datalist id="tag-options">
+                                                {categories.map(c => <option key={c} value={c} />)}
+                                            </datalist>
                                         </div>
                                         <div className="space-y-1.5"><p className="text-[10px] font-black text-slate-400 px-1">代墊人</p>
                                             <div className="flex gap-2 h-[52px]">
@@ -218,17 +225,13 @@
                                             <input type="number" placeholder="預期利潤" className="bg-white py-4 px-4 rounded-2xl font-black text-sm outline-none border border-emerald-100 text-emerald-600" value={formData.fee} onChange={e => setFormData({...formData, fee: e.target.value})} />
                                         </div>
                                     </div>
-                                    <button onClick={() => {
-                                        if (isEditing) setItems(items.map(i => i.id === isEditing ? {...formData, id: isEditing} : i));
-                                        else setItems([{ id: Date.now(), ...formData, stage: 'purchase' }, ...items]);
-                                        setShowModal(false);
-                                    }} className="w-full bg-sky-600 text-white py-5 rounded-3xl font-black shadow-xl active-scale">儲存項目</button>
+                                    <button onClick={handleSave} className="w-full bg-sky-600 text-white py-5 rounded-3xl font-black shadow-xl active-scale">儲存項目</button>
                                 </div>
                             </div>
                         </div>
                     )}
-                    
-                    {/* 其他功能邏輯不變 */}
+
+                    {/* 共同基金 */}
                     {showCreditModal && (
                         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-6 text-left">
                             <div className="bg-white w-full max-w-xs rounded-[32px] p-8 shadow-2xl">
@@ -248,25 +251,32 @@
                             </div>
                         </div>
                     )}
+
+                    {/* 標籤管理介面 */}
                     {showTagModal && (
                         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-6 text-left">
                             <div className="bg-white w-full max-w-sm rounded-[40px] p-8 shadow-2xl">
                                 <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black text-sky-900 italic">管理採購標籤</h2><button onClick={() => setShowTagModal(false)} className="text-slate-300 text-3xl leading-none">&times;</button></div>
-                                <div className="flex gap-2 mb-6">
-                                    <input placeholder="新標籤" className="flex-1 bg-slate-50 py-3 px-4 rounded-xl font-bold outline-none border-2 border-transparent focus:border-sky-100" value={lastFive} onChange={e => setLastFive(e.target.value)} />
-                                    <button onClick={() => { if(lastFive && !categories.includes(lastFive)) { setCategories([...categories, lastFive]); setLastFive(''); } }} className="bg-sky-500 text-white px-4 rounded-xl font-black shadow-md">新增</button>
-                                </div>
-                                <div className="space-y-2 max-h-48 overflow-y-auto no-scrollbar">
+                                <div className="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
                                     {categories.map(tag => (
-                                        <div key={tag} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl text-sm font-black text-slate-700">{tag}{tag !== '預設' && <button onClick={() => setCategories(categories.filter(c => c !== tag))} className="text-rose-400 p-1"><Icon name="trash" className="w-3.5 h-3.5" /></button>}</div>
+                                        <div key={tag} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl text-sm font-black text-slate-700">
+                                            {tag}
+                                            {tag !== '預設' && (
+                                                <button onClick={() => setCategories(categories.filter(c => c !== tag))} className="text-rose-400 p-1">
+                                                    <Icon name="trash" className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
+                                        </div>
                                     ))}
                                 </div>
                             </div>
                         </div>
                     )}
+
+                    {/* 帳號後五碼 */}
                     {showCheckModal && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-6 text-slate-900">
-                            <div className="bg-white w-full max-w-xs rounded-[32px] p-8 shadow-2xl text-center text-slate-900">
+                            <div className="bg-white w-full max-w-xs rounded-[32px] p-8 shadow-2xl text-center">
                                 <h3 className="text-lg font-black mb-6">輸入帳號後五碼</h3>
                                 <input type="text" maxLength="5" placeholder="00000" className="w-full bg-slate-50 py-4 px-4 rounded-2xl font-black text-3xl text-center text-indigo-600 outline-none mb-6" value={lastFive} onChange={e => setLastFive(e.target.value)} autoFocus />
                                 <div className="flex gap-3">
