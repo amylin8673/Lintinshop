@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v3.9</title>
+    <title>LinTin 協作系統 v4.0</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -47,7 +47,6 @@
             const [isEditing, setIsEditing] = React.useState(null);
             const [items, setItems] = React.useState([]);
             
-            // 帳號五碼彈跳框狀態
             const [showBankModal, setShowBankModal] = React.useState(false);
             const [currentBankItem, setCurrentBankItem] = React.useState(null);
             const [bankCode, setBankCode] = React.useState('');
@@ -215,7 +214,7 @@
                                     <div className="flex-1 pr-4">
                                         <h3 className="text-sm font-black text-slate-800 flex items-center gap-1.5">
                                             {item.customerName}
-                                            {item.bankLastFive && <span className="bg-slate-100 text-slate-500 text-[8px] px-1.5 py-0.5 rounded-md font-mono">#帳號 {item.bankLastFive}</span>}
+                                            {item.bankLastFive && <span className="bg-slate-100 text-slate-500 text-[8px] px-1.5 py-0.5 rounded-md font-mono">{item.bankLastFive}</span>}
                                         </h3>
                                         <p className="text-xs text-slate-400 mt-1 mb-4 leading-relaxed line-clamp-2 font-medium">{item.productName}</p>
                                         <div className="flex gap-2">
@@ -258,11 +257,11 @@
                                 <div className="bg-amber-50 w-14 h-14 rounded-2xl flex items-center justify-center text-amber-500 mx-auto mb-4 shadow-inner">
                                     <Icon name="card" className="w-7 h-7" />
                                 </div>
-                                <h3 className="text-lg font-black text-slate-800 mb-2">紀錄帳號後五碼</h3>
-                                <p className="text-xs text-slate-400 mb-6 font-medium">請輸入「{currentBankItem?.customerName}」的匯款帳號後五碼</p>
+                                <h3 className="text-lg font-black text-slate-800 mb-2">帳號後五碼</h3>
+                                <p className="text-xs text-slate-400 mb-6 font-medium">請輸入「{currentBankItem?.customerName}」的帳號後五碼</p>
                                 <input 
                                     type="number" 
-                                    placeholder="帳號後五碼 (例: 12345)" 
+                                    placeholder="00000" 
                                     className="w-full bg-slate-50 p-4 rounded-2xl font-black text-center text-lg text-sky-600 outline-none border-2 border-transparent focus:border-sky-100 mb-6"
                                     value={bankCode}
                                     onChange={e => setBankCode(e.target.value)}
@@ -270,7 +269,7 @@
                                 />
                                 <div className="flex gap-3">
                                     <button onClick={() => setShowBankModal(false)} className="flex-1 py-4 rounded-2xl text-xs font-black text-slate-400 bg-slate-50 active-scale">取消</button>
-                                    <button onClick={saveBankCode} className="flex-1 py-4 rounded-2xl text-xs font-black text-white bg-sky-600 shadow-lg shadow-sky-200 active-scale">儲存紀錄</button>
+                                    <button onClick={saveBankCode} className="flex-1 py-4 rounded-2xl text-xs font-black text-white bg-sky-600 shadow-lg shadow-sky-200 active-scale">確認</button>
                                 </div>
                             </div>
                         </div>
