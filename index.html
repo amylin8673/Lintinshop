@@ -3,67 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin Pro</title>
+    <title>LinTin Pro | 專業代購管理</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { -webkit-tap-highlight-color: transparent; }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body class="bg-slate-50 p-4 font-sans text-slate-900 leading-relaxed">
-    <div class="max-w-md mx-auto space-y-6 pt-4">
+<body class="bg-slate-50 font-sans pb-24 text-slate-800">
+    <div class="max-w-md mx-auto space-y-4 pt-6 px-4">
         <div class="flex justify-between items-center px-2">
-            <h1 class="text-2xl font-black text-blue-600 italic">LinTin Pro</h1>
-            <span class="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-bold shadow-md">GITHUB CLOUD</span>
+            <div>
+                <h1 class="text-2xl font-black text-blue-600 italic leading-none">LinTin</h1>
+                <p class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest tracking-tighter">Professional System</p>
+            </div>
+            <div class="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-bold shadow-lg">GitHub 穩定版</div>
         </div>
 
-        <div class="bg-white rounded-[2.5rem] shadow-2xl shadow-blue-200/50 p-8 border border-white relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-2 bg-blue-600"></div>
-            
-            <div class="space-y-6">
-                <div>
-                    <label class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 block ml-1">外幣金額</label>
-                    <div class="flex bg-slate-100 rounded-2xl p-2 border-2 border-transparent focus-within:border-blue-500 focus-within:bg-white transition-all">
-                        <select id="currency" class="bg-white px-4 py-2 rounded-xl font-bold text-blue-600 shadow-sm outline-none">
-                            <option value="JPY">日圓</option>
-                            <option value="KRW">韓圓</option>
-                            <option value="USD">美金</option>
-                        </select>
-                        <input type="number" id="foreignPrice" placeholder="0.00" class="w-full bg-transparent p-3 text-2xl font-bold outline-none text-right">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                        <label class="text-[10px] font-bold text-slate-400 block mb-1">匯率</label>
-                        <input type="number" id="rate" value="0.215" step="0.001" class="w-full bg-transparent text-lg font-bold text-blue-800 outline-none">
-                    </div>
-                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                        <label class="text-[10px] font-bold text-slate-400 block mb-1">服務費 %</label>
-                        <input type="number" id="fee" value="10" class="w-full bg-transparent text-lg font-bold text-blue-800 outline-none">
-                    </div>
-                </div>
-
-                <button onclick="calculate()" class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-3xl py-6 shadow-xl shadow-blue-300 active:scale-95 transition-all outline-none">
-                    <span class="text-blue-100 text-xs block mb-1 opacity-80">預估台幣總價</span>
-                    <span class="text-3xl font-black" id="totalResult">NT$ 0</span>
-                </button>
+        <div class="grid grid-cols-3 gap-2">
+            <div class="bg-white p-3 rounded-2xl border border-blue-50 shadow-sm">
+                <p class="text-[9px] font-black text-slate-400 mb-1 uppercase">預估利潤</p>
+                <p class="text-sm font-black text-emerald-500">NT$ <span id="stat-profit">0</span></p>
+            </div>
+            <div class="bg-white p-3 rounded-2xl border border-blue-50 shadow-sm">
+                <p class="text-[9px] font-black text-slate-400 mb-1 uppercase">待收帳款</p>
+                <p class="text-sm font-black text-amber-500">NT$ <span id="stat-pending">0</span></p>
+            </div>
+            <div class="bg-white p-3 rounded-2xl border border-blue-50 shadow-sm">
+                <p class="text-[9px] font-black text-slate-400 mb-1 uppercase">訂單總數</p>
+                <p class="text-sm font-black text-blue-600"><span id="stat-count">0</span> 件</p>
             </div>
         </div>
 
-        <div class="px-6 py-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-center space-x-2">
-            <div class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-            <span class="text-[10px] font-bold text-blue-600">系統狀態：已連結 GitHub Pages 雲端服務</span>
+        <div class="flex bg-slate-200/50 p-1 rounded-2xl">
+            <button onclick="switchTab('purchase')" id="btn-purchase" class="flex-1 py-2 text-xs font-black rounded-xl transition-all bg-white text-blue-600 shadow-sm">採購清單</button>
+            <button onclick="switchTab('order')" id="btn-order" class="flex-1 py-2 text-xs font-black rounded-xl transition-all text-slate-500">訂單管理</button>
+        </div>
+
+        <div id="content-list" class="space-y-3">
+            </div>
+
+        <div class="fixed bottom-6 left-0 right-0 px-6 max-w-md mx-auto">
+            <button onclick="openModal()" class="w-full bg-blue-600 text-white py-4 rounded-[2rem] font-black shadow-2xl shadow-blue-300 flex items-center justify-center gap-2 active:scale-95 transition-all">
+                <i class="fas fa-plus"></i> 新增代購項目
+            </button>
+        </div>
+    </div>
+
+    <div id="modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-6">
+        <div class="bg-white w-full rounded-[2.5rem] p-8 shadow-2xl space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-black text-slate-800">新增項目</h2>
+                <button onclick="closeModal()" class="text-slate-300"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="space-y-4">
+                <input id="input-customer" type="text" placeholder="客戶名稱" class="w-full bg-slate-100 p-4 rounded-2xl outline-none font-bold">
+                <input id="input-product" type="text" placeholder="商品名稱" class="w-full bg-slate-100 p-4 rounded-2xl outline-none font-bold">
+                <div class="grid grid-cols-2 gap-4">
+                    <input id="input-price" type="number" placeholder="台幣成本" class="w-full bg-blue-50 p-4 rounded-2xl outline-none font-bold text-blue-600">
+                    <input id="input-fee" type="number" placeholder="預估利潤" class="w-full bg-emerald-50 p-4 rounded-2xl outline-none font-bold text-emerald-600">
+                </div>
+                <button onclick="addItem()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg">確認新增</button>
+            </div>
         </div>
     </div>
 
     <script>
-        function calculate() {
-            const price = parseFloat(document.getElementById('foreignPrice').value) || 0;
-            const rate = parseFloat(document.getElementById('rate').value) || 0;
-            const fee = parseFloat(document.getElementById('fee').value) || 0;
-            const total = Math.round(price * rate * (1 + fee/100));
-            document.getElementById('totalResult').innerText = 'NT$ ' + total.toLocaleString();
+        let items = JSON.parse(localStorage.getItem('lintin_items')) || [];
+        let currentTab = 'purchase';
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('btn-purchase').className = tab === 'purchase' ? 'flex-1 py-2 text-xs font-black rounded-xl bg-white text-blue-600 shadow-sm' : 'flex-1 py-2 text-xs font-black rounded-xl text-slate-500';
+            document.getElementById('btn-order').className = tab === 'order' ? 'flex-1 py-2 text-xs font-black rounded-xl bg-white text-blue-600 shadow-sm' : 'flex-1 py-2 text-xs font-black rounded-xl text-slate-500';
+            render();
         }
+
+        function openModal() { document.getElementById('modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+        function addItem() {
+            const customer = document.getElementById('input-customer').value;
+            const product = document.getElementById('input-product').value;
+            const price = Number(document.getElementById('input-price').value);
+            const fee = Number(document.getElementById('input-fee').value);
+
+            if(!customer || !product) return alert('請填寫完整');
+
+            items.push({ id: Date.now(), customer, product, price, fee, stage: 'purchase', status: '未付款' });
+            localStorage.setItem('lintin_items', JSON.stringify(items));
+            closeModal();
+            render();
+            // 清空輸入
+            document.getElementById('input-customer').value = '';
+            document.getElementById('input-product').value = '';
+            document.getElementById('input-price').value = '';
+            document.getElementById('input-fee').value = '';
+        }
+
+        function updateStage(id, stage) {
+            items = items.map(i => i.id === id ? {...i, stage: stage} : i);
+            localStorage.setItem('lintin_items', JSON.stringify(items));
+            render();
+        }
+
+        function deleteItem(id) {
+            items = items.filter(i => i.id !== id);
+            localStorage.setItem('lintin_items', JSON.stringify(items));
+            render();
+        }
+
+        function render() {
+            const list = document.getElementById('content-list');
+            const filtered = items.filter(i => i.stage === currentTab);
+            list.innerHTML = filtered.length ? '' : '<div class="py-20 text-center text-slate-300 font-bold text-xs uppercase tracking-widest">目前沒有資料</div>';
+            
+            let totalProfit = 0, totalPending = 0;
+            items.forEach(i => {
+                totalProfit += i.fee;
+                if(i.stage === 'order') totalPending += (i.price + i.fee);
+            });
+
+            document.getElementById('stat-profit').innerText = totalProfit.toLocaleString();
+            document.getElementById('stat-pending').innerText = totalPending.toLocaleString();
+            document.getElementById('stat-count').innerText = items.length;
+
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-[2rem] border border-white shadow-sm space-y-3 relative overflow-hidden";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <h3 class="font-black text-slate-800 text-sm"><i class="fas fa-user-circle mr-2 text-blue-400"></i>${item.customer}</h3>
+                        <div class="text-right">
+                            <p class="text-xs font-black text-blue-600 italic">NT$ ${(item.price + item.fee).toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl text-xs font-bold text-slate-500">${item.product}</div>
+                    <div class="flex justify-between items-center pt-2">
+                        <button onclick="deleteItem(${item.id})" class="text-[10px] font-bold text-rose-300">刪除</button>
+                        ${item.stage === 'purchase' 
+                            ? `<button onclick="updateStage(${item.id}, 'order')" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black shadow-md">完成採購</button>`
+                            : `<span class="bg-amber-50 text-amber-500 px-3 py-1 rounded-lg text-[10px] font-bold">待收款</span>`
+                        }
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+        render();
     </script>
 </body>
 </html>
