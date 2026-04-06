@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v2.5</title>
+    <title>LinTin 協作系統 v2.6</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -14,6 +14,7 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         select { appearance: none; -webkit-appearance: none; }
+        .active-scale:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -21,8 +22,8 @@
 
     <script type="text/babel">
         const Icon = ({ name }) => {
-            const icons = { plus: '＋', box: '📦', down: '▼' };
-            return <span style={{fontSize: '10px'}}>{icons[name]}</span>;
+            const icons = { plus: '＋', box: '📦', down: '▼', check: '✅' };
+            return <span style={{fontSize: '12px'}}>{icons[name]}</span>;
         };
 
         const App = () => {
@@ -37,16 +38,24 @@
             const currencies = ['KRW', 'JPY', 'THB', 'HKD', 'AUD', 'NTD'];
             const exchangeRates = { KRW: 0.024, JPY: 0.21, HKD: 4.1, THB: 0.9, AUD: 21.2, NTD: 1 };
 
-            // 預設 payer 為空字串
             const initialForm = { customerName: '', productName: '', price: '', fee: '', payer: '', currency: 'KRW', foreignPrice: '' };
             const [formData, setFormData] = React.useState(initialForm);
 
             const saveItem = () => {
                 if (!formData.customerName || !formData.productName) { alert("請填寫必要資訊"); return; }
-                setItems([{ id: Date.now(), ...formData, stage: viewMode }, ...items]);
+                const newItem = { id: Date.now(), ...formData, stage: 'purchase' };
+                setItems([newItem, ...items]);
                 alert("新增成功"); 
                 setShowModal(false);
                 setFormData(initialForm);
+            };
+
+            // --- 核心功能：標記為已買到並跳轉 ---
+            const markAsBought = (id) => {
+                setItems(items.map(item => 
+                    item.id === id ? { ...item, stage: 'order' } : item
+                ));
+                setViewMode('order'); // 自動跳轉到訂單管理畫面
             };
 
             if (!inviteCode) {
@@ -62,14 +71,14 @@
             }
 
             return (
-                <div className="min-h-screen">
+                <div className="min-h-screen pb-10">
                     <header className="bg-white/80 backdrop-blur-md border-b border-sky-50 px-5 pt-4 sticky top-0 z-30 shadow-sm">
                         <div className="flex justify-between items-center mb-4">
                             <div className="flex items-center gap-2">
                                 <div className="bg-sky-500 p-2 rounded-xl text-white"><Icon name="box" /></div>
                                 <h1 className="text-xl font-black text-sky-900 italic leading-none">LinTin</h1>
                             </div>
-                            <button onClick={() => setShowModal(true)} className="bg-sky-600 text-white p-2.5 rounded-xl shadow-lg active:scale-90 transition-all">＋</button>
+                            <button onClick={() => setShowModal(true)} className="bg-sky-600 text-white p-2.5 rounded-xl shadow-lg active-scale transition-all">＋</button>
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 mb-4">
@@ -90,7 +99,7 @@
                                         >
                                             {currencies.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
-                                        <div className="absolute right-1 pointer-events-none text-sky-300"><Icon name="down" /></div>
+                                        <div className="absolute right-1 pointer-events-none text-sky-300 font-bold">▼</div>
                                     </div>
                                 </div>
                             </div>
@@ -110,7 +119,7 @@
 
                     <div className="p-4 space-y-3">
                         {items.filter(i => i.stage === viewMode).map(item => (
-                            <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative">
+                            <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative group">
                                 {item.payer && (
                                     <div className={`absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white rounded-bl-xl ${item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-orange-400'}`}>
                                         {item.payer}
@@ -118,39 +127,49 @@
                                 )}
                                 <h3 className="text-sm font-black text-slate-800">{item.customerName} ✨</h3>
                                 <p className="text-xs text-slate-400 mt-1">{item.productName}</p>
-                                <div className="mt-3 text-right font-black text-sky-700">NT$ {Number(item.price).toLocaleString()}</div>
+                                
+                                <div className="mt-4 flex justify-between items-end">
+                                    {/* 僅在採購清單顯示「已買到」按鈕 */}
+                                    {viewMode === 'purchase' ? (
+                                        <button 
+                                            onClick={() => markAsBought(item.id)}
+                                            className="bg-sky-50 text-sky-600 text-[10px] font-black px-4 py-2 rounded-xl active-scale hover:bg-sky-500 hover:text-white transition-all flex items-center gap-1 shadow-sm border border-sky-100"
+                                        >
+                                            已買到 <Icon name="check" />
+                                        </button>
+                                    ) : (
+                                        <div className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-3 py-1 rounded-lg">✓ 已完成採購</div>
+                                    )}
+                                    <div className="text-right font-black text-sky-700 text-sm italic">NT$ {Number(item.price).toLocaleString()}</div>
+                                </div>
                             </div>
                         ))}
+                        {items.filter(i => i.stage === viewMode).length === 0 && (
+                            <div className="text-center py-20 text-slate-300 font-black text-xs uppercase tracking-widest">目前沒有項目</div>
+                        )}
                     </div>
 
                     {showModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
                                 <div className="flex justify-between items-center mb-8">
-                                    <h2 className="text-xl font-black italic text-sky-900">新增項目</h2>
+                                    <h2 className="text-xl font-black italic text-sky-900 font-black">新增項目</h2>
                                     <button onClick={() => setShowModal(false)} className="text-slate-300 text-2xl">&times;</button>
                                 </div>
                                 <div className="space-y-6">
                                     <div>
                                         <p className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">代墊人</p>
                                         <div className="flex gap-2">
-                                            {/* 新增「無」按鈕 */}
                                             {['', '琳', '璇'].map(p => (
-                                                <button 
-                                                    key={p} 
-                                                    onClick={() => setFormData({...formData, payer: p})} 
-                                                    className={`flex-1 py-4 rounded-2xl text-xs font-black transition-all ${formData.payer === p ? 'bg-slate-800 text-white shadow-lg' : 'bg-slate-50 text-slate-300'}`}
-                                                >
-                                                    {p || '無'}
-                                                </button>
+                                                <button key={p} onClick={() => setFormData({...formData, payer: p})} className={`flex-1 py-4 rounded-2xl text-xs font-black transition-all ${formData.payer === p ? 'bg-slate-800 text-white shadow-lg' : 'bg-slate-50 text-slate-300'}`}>{p || '無'}</button>
                                             ))}
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <input placeholder="客戶名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none" value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} />
-                                        <input placeholder="商品名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none" value={formData.productName} onChange={e => setFormData({...formData, productName: e.target.value})} />
+                                        <input placeholder="客戶名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none focus:ring-1 ring-sky-200" value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} />
+                                        <input placeholder="商品名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none focus:ring-1 ring-sky-200" value={formData.productName} onChange={e => setFormData({...formData, productName: e.target.value})} />
                                     </div>
-                                    <div className="bg-amber-50 p-5 rounded-3xl space-y-4">
+                                    <div className="bg-amber-50 p-5 rounded-3xl space-y-4 shadow-inner">
                                         <select 
                                             className="w-full bg-white p-3 rounded-xl text-xs font-black text-amber-600 outline-none border border-amber-100"
                                             value={formData.currency}
@@ -170,7 +189,7 @@
                                         <input type="number" placeholder="台幣成本" className="w-full bg-sky-50 p-4 rounded-2xl font-black text-sm text-sky-600 outline-none" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
                                         <input type="number" placeholder="預期利潤" className="w-full bg-emerald-50 p-4 rounded-2xl font-black text-sm text-emerald-600 outline-none" value={formData.fee} onChange={e => setFormData({...formData, fee: e.target.value})} />
                                     </div>
-                                    <button onClick={saveItem} className="w-full bg-sky-600 text-white py-5 rounded-3xl font-black shadow-xl">確認新增</button>
+                                    <button onClick={saveItem} className="w-full bg-sky-600 text-white py-5 rounded-3xl font-black shadow-xl active-scale transition-all">確認新增</button>
                                 </div>
                             </div>
                         </div>
