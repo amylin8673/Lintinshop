@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v4.3</title>
+    <title>LinTin 協作系統 v4.5</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -48,7 +48,7 @@
             const [items, setItems] = React.useState([]);
             
             const [showBankModal, setShowBankModal] = React.useState(false);
-            const [currentBankItem, setCurrentBankItem] = React.useState(null);
+            const [currentBankCustomer, setCurrentBankCustomer] = React.useState(null);
             const [bankCode, setBankCode] = React.useState('');
 
             const [fundSettings, setFundSettings] = React.useState({ amount: 1000000, currency: 'KRW' });
@@ -62,6 +62,25 @@
             const initialForm = { customerName: '', productName: '', price: '', fee: '', payer: '琳', currency: 'KRW', foreignPrice: '', status: '未付款', bankLastFive: '' };
             const [formData, setFormData] = React.useState(initialForm);
 
+            // 合併邏輯：將訂單按客戶名稱分組
+            const groupedOrders = React.useMemo(() => {
+                const orders = items.filter(i => i.stage === 'order');
+                const groups = {};
+                orders.forEach(item => {
+                    if (!groups[item.customerName]) {
+                        groups[item.customerName] = {
+                            customerName: item.customerName,
+                            bankLastFive: item.bankLastFive || '',
+                            status: item.status, // 以第一筆狀態為準，或可改為邏輯判斷
+                            payer: item.payer,
+                            items: []
+                        };
+                    }
+                    groups[item.customerName].items.push(item);
+                });
+                return Object.values(groups);
+            }, [items]);
+
             const saveItem = () => {
                 if (!formData.customerName || !formData.productName) { alert("請填寫必要資訊"); return; }
                 if (isEditing) {
@@ -74,20 +93,20 @@
                 setFormData(initialForm);
             };
 
-            const handleStatusChange = (id, newStatus) => {
+            const handleGroupStatusChange = (customerName, newStatus) => {
                 if (newStatus === '已匯款') {
-                    const item = items.find(i => i.id === id);
-                    setCurrentBankItem(item);
-                    setBankCode(item.bankLastFive || '');
+                    setCurrentBankCustomer(customerName);
+                    const existing = items.find(i => i.customerName === customerName && i.bankLastFive);
+                    setBankCode(existing ? existing.bankLastFive : '');
                     setShowBankModal(true);
                 } else {
-                    updateItemStatus(id, newStatus);
+                    setItems(items.map(item => item.customerName === customerName && item.stage === 'order' ? { ...item, status: newStatus } : item));
                 }
             };
 
             const saveBankCode = () => {
                 setItems(items.map(item => 
-                    item.id === currentBankItem.id 
+                    (item.customerName === currentBankCustomer && item.stage === 'order')
                     ? { ...item, bankLastFive: bankCode, status: '待查帳' } 
                     : item
                 ));
@@ -95,13 +114,9 @@
                 setBankCode('');
             };
 
-            const updateItemStatus = (id, newStatus) => {
-                setItems(items.map(item => item.id === id ? { ...item, status: newStatus } : item));
-            };
-
             const deleteItem = (id) => {
                 const itemToDelete = items.find(i => i.id === id);
-                if (confirm("確定要刪除這個項目嗎？")) {
+                if (confirm("確定要刪除這個商品嗎？")) {
                     if (itemToDelete.stage === 'order') {
                         setFundSettings(prev => ({ ...prev, amount: Number(prev.amount) + (Number(itemToDelete.price) / exchangeRates[prev.currency]) }));
                         setPendingFinance(prev => prev - Number(itemToDelete.price || 0));
@@ -202,61 +217,95 @@
                         )}
                     </header>
 
-                    <div className="p-4 space-y-3">
-                        {items
-                            .filter(i => i.stage === viewMode)
-                            .filter(i => orderFilter === '全部' || i.status === orderFilter || viewMode === 'purchase')
-                            .filter(i => i.customerName.includes(searchQuery) || i.productName.includes(searchQuery))
-                            .map(item => (
-                            <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative overflow-hidden transition-all">
-                                {item.payer && (
-                                    <div className={`absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white rounded-bl-xl shadow-sm ${item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-orange-400'}`}>
-                                        {item.payer}
-                                    </div>
-                                )}
-
+                    <div className="p-4 space-y-4">
+                        {/* 採購清單：保持原本單一顯示 */}
+                        {viewMode === 'purchase' && items.filter(i => i.stage === 'purchase').filter(i => i.customerName.includes(searchQuery) || i.productName.includes(searchQuery)).map(item => (
+                            <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative overflow-hidden">
+                                <div className={`absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white rounded-bl-xl ${item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-orange-400'}`}>{item.payer}</div>
                                 <div className="flex justify-between items-start">
                                     <div className="flex-1 pr-4">
-                                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                                            <h3 className="text-sm font-black text-slate-800">{item.customerName}</h3>
-                                            {item.bankLastFive && (
-                                                <span className="bg-rose-50 text-rose-400 text-[8px] px-2 py-0.5 rounded-lg font-bold">
-                                                    帳號後五碼：{item.bankLastFive}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="text-xs text-slate-400 mt-1 mb-4 leading-relaxed line-clamp-2 font-medium">{item.productName}</p>
+                                        <h3 className="text-sm font-black text-slate-800 mb-1">{item.customerName}</h3>
+                                        <p className="text-xs text-slate-400 mb-4 font-medium">{item.productName}</p>
                                         <div className="flex gap-2">
-                                            <button onClick={() => openEdit(item)} className="bg-slate-50 text-slate-400 p-2.5 rounded-xl hover:text-sky-600 active-scale"><Icon name="edit" /></button>
-                                            <button onClick={() => deleteItem(item.id)} className="bg-slate-50 text-slate-400 p-2.5 rounded-xl hover:text-red-500 active-scale"><Icon name="trash" /></button>
+                                            <button onClick={() => openEdit(item)} className="bg-slate-50 text-slate-400 p-2.5 rounded-xl active-scale"><Icon name="edit" /></button>
+                                            <button onClick={() => deleteItem(item.id)} className="bg-slate-50 text-slate-400 p-2.5 rounded-xl active-scale"><Icon name="trash" /></button>
                                         </div>
                                     </div>
-                                    
-                                    <div className="flex flex-col items-end gap-1">
-                                        <div className="font-black text-sky-700 text-sm italic tracking-tight mb-1 font-mono">NT$ {Number(item.price).toLocaleString()}</div>
-                                        <div className="text-right space-y-0.5 mb-2 font-mono">
-                                            {item.foreignPrice && item.currency !== 'NTD' && <p className="text-[9px] font-black text-slate-300 uppercase">{Number(item.foreignPrice).toLocaleString()} {item.currency}</p>}
-                                            {item.fee && <p className="text-[10px] font-black text-emerald-500 italic">+ {Number(item.fee).toLocaleString()}</p>}
-                                        </div>
-
-                                        {viewMode === 'purchase' ? (
-                                            <button onClick={() => markAsBought(item.id)} className="bg-sky-50 text-sky-600 text-[10px] font-black px-5 py-2.5 rounded-xl active-scale border border-sky-100 shadow-sm">已買到</button>
-                                        ) : (
-                                            <div className="relative">
-                                                <select 
-                                                    className={`appearance-none pl-3 pr-8 py-1.5 rounded-xl text-[9px] font-black border shadow-sm outline-none cursor-pointer transition-all ${item.status === '已完成' ? 'bg-emerald-50 text-emerald-500 border-emerald-100' : 'bg-amber-50 text-amber-500 border-amber-100'}`}
-                                                    value={item.status}
-                                                    onChange={(e) => handleStatusChange(item.id, e.target.value)}
-                                                >
-                                                    {orderStatusList.filter(s => s !== '全部').map(s => <option key={s} value={s}>{s}</option>)}
-                                                </select>
-                                                <div className={`absolute right-2 top-2 pointer-events-none ${item.status === '已完成' ? 'text-emerald-400' : 'text-amber-400'}`}><Icon name="down" className="w-2.5 h-2.5" /></div>
-                                            </div>
-                                        )}
+                                    <div className="flex flex-col items-end gap-2">
+                                        <div className="font-black text-sky-700 text-sm font-mono">NT$ {Number(item.price).toLocaleString()}</div>
+                                        <button onClick={() => markAsBought(item.id)} className="bg-sky-50 text-sky-600 text-[10px] font-black px-5 py-2.5 rounded-xl active-scale border border-sky-100">已買到</button>
                                     </div>
                                 </div>
                             </div>
                         ))}
+
+                        {/* 訂單管理：同客戶合併顯示 */}
+                        {viewMode === 'order' && groupedOrders
+                            .filter(group => orderFilter === '全部' || group.items.some(i => i.status === orderFilter))
+                            .filter(group => group.customerName.includes(searchQuery) || group.items.some(i => i.productName.includes(searchQuery)))
+                            .map(group => {
+                                const totalGroupPrice = group.items.reduce((sum, i) => sum + Number(i.price || 0), 0);
+                                const totalGroupFee = group.items.reduce((sum, i) => sum + Number(i.fee || 0), 0);
+                                const currentStatus = group.items[0].status;
+
+                                return (
+                                    <div key={group.customerName} className="bg-white rounded-[32px] shadow-sm border border-slate-100 overflow-hidden">
+                                        {/* 客戶頭部 */}
+                                        <div className="p-5 pb-3 flex justify-between items-start bg-slate-50/50">
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <h3 className="text-sm font-black text-slate-800">{group.customerName}</h3>
+                                                    {group.items[0].bankLastFive && (
+                                                        <span className="bg-rose-50 text-rose-400 text-[8px] px-2 py-0.5 rounded-lg font-bold">
+                                                            帳號後五碼：{group.items[0].bankLastFive}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">共 {group.items.length} 件商品</p>
+                                            </div>
+                                            <div className="relative">
+                                                <select 
+                                                    className={`appearance-none pl-3 pr-8 py-1.5 rounded-xl text-[9px] font-black border shadow-sm outline-none cursor-pointer ${currentStatus === '已完成' ? 'bg-emerald-50 text-emerald-500 border-emerald-100' : 'bg-amber-50 text-amber-500 border-amber-100'}`}
+                                                    value={currentStatus}
+                                                    onChange={(e) => handleGroupStatusChange(group.customerName, e.target.value)}
+                                                >
+                                                    {orderStatusList.filter(s => s !== '全部').map(s => <option key={s} value={s}>{s}</option>)}
+                                                </select>
+                                                <div className="absolute right-2 top-2 pointer-events-none text-current opacity-50"><Icon name="down" className="w-2.5 h-2.5" /></div>
+                                            </div>
+                                        </div>
+
+                                        {/* 商品列表 */}
+                                        <div className="px-5 py-2 space-y-3">
+                                            {group.items.map((item, idx) => (
+                                                <div key={item.id} className={`flex justify-between items-center py-2 ${idx !== group.items.length - 1 ? 'border-b border-dashed border-slate-100' : ''}`}>
+                                                    <div className="flex-1 pr-4">
+                                                        <p className="text-xs text-slate-600 font-medium line-clamp-1">{item.productName}</p>
+                                                        <div className="flex gap-2 mt-1">
+                                                            <button onClick={() => openEdit(item)} className="text-slate-300 hover:text-sky-500"><Icon name="edit" className="w-3 h-3" /></button>
+                                                            <button onClick={() => deleteItem(item.id)} className="text-slate-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3" /></button>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-[11px] font-black text-slate-400 font-mono">NT$ {Number(item.price).toLocaleString()}</p>
+                                                        <p className="text-[9px] font-black text-emerald-400 font-mono">+{Number(item.fee).toLocaleString()}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* 底部總計 */}
+                                        <div className="p-4 bg-sky-50/30 flex justify-between items-center border-t border-slate-50">
+                                            <span className="text-[10px] font-black text-sky-900/40 uppercase">Total Amount</span>
+                                            <div className="text-right">
+                                                <div className="text-sm font-black text-sky-600 font-mono italic">NT$ {totalGroupPrice.toLocaleString()}</div>
+                                                <div className="text-[9px] font-black text-emerald-500 font-mono">Profit: +{totalGroupFee.toLocaleString()}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        }
                     </div>
 
                     {/* 帳號後五碼彈跳框 */}
@@ -267,7 +316,7 @@
                                     <Icon name="card" className="w-7 h-7" />
                                 </div>
                                 <h3 className="text-lg font-black text-slate-800 mb-2">帳號後五碼</h3>
-                                <p className="text-xs text-slate-400 mb-6 font-medium">請輸入「{currentBankItem?.customerName}」的帳號後五碼</p>
+                                <p className="text-xs text-slate-400 mb-6 font-medium">請輸入「{currentBankCustomer}」的帳號後五碼</p>
                                 <input 
                                     type="number" 
                                     placeholder="00000" 
@@ -284,6 +333,7 @@
                         </div>
                     )}
 
+                    {/* 新增/編輯 Modal */}
                     {showModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 text-left">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
@@ -301,17 +351,6 @@
                                                 ))}
                                             </div>
                                         </div>
-                                        {viewMode === 'order' && (
-                                            <div className="flex-1">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase mb-3 ml-1">狀態</p>
-                                                <div className="relative">
-                                                    <select className="w-full bg-slate-50 p-3 rounded-xl text-xs font-black text-sky-600 outline-none border border-transparent appearance-none" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
-                                                        {orderStatusList.filter(s => s !== '全部').map(s => <option key={s} value={s}>{s}</option>)}
-                                                    </select>
-                                                    <div className="absolute right-3 top-3.5 text-sky-300 pointer-events-none"><Icon name="down" className="w-3.5 h-3.5" /></div>
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <input placeholder="客戶名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none" value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} />
