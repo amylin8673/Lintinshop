@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v2.4</title>
+    <title>LinTin 協作系統 v2.5</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -32,23 +32,18 @@
             const [showModal, setShowModal] = React.useState(false);
             const [items, setItems] = React.useState([]);
             
-            // 購物金狀態
             const [fundSettings, setFundSettings] = React.useState({ amount: 1000000, currency: 'KRW' });
 
             const currencies = ['KRW', 'JPY', 'THB', 'HKD', 'AUD', 'NTD'];
             const exchangeRates = { KRW: 0.024, JPY: 0.21, HKD: 4.1, THB: 0.9, AUD: 21.2, NTD: 1 };
 
-            const initialForm = { customerName: '', productName: '', price: '', fee: '', payer: '琳', currency: 'KRW', foreignPrice: '' };
+            // 預設 payer 為空字串
+            const initialForm = { customerName: '', productName: '', price: '', fee: '', payer: '', currency: 'KRW', foreignPrice: '' };
             const [formData, setFormData] = React.useState(initialForm);
-
-            // --- 修正：僅切換幣別，不連動金額 ---
-            const handleCurrencyChange = (newCurrency) => {
-                setFundSettings({ ...fundSettings, currency: newCurrency });
-            };
 
             const saveItem = () => {
                 if (!formData.customerName || !formData.productName) { alert("請填寫必要資訊"); return; }
-                setItems([{ id: Date.now(), ...formData, stage: viewMode, status: '預購中' }, ...items]);
+                setItems([{ id: Date.now(), ...formData, stage: viewMode }, ...items]);
                 alert("新增成功"); 
                 setShowModal(false);
                 setFormData(initialForm);
@@ -77,7 +72,6 @@
                             <button onClick={() => setShowModal(true)} className="bg-sky-600 text-white p-2.5 rounded-xl shadow-lg active:scale-90 transition-all">＋</button>
                         </div>
 
-                        {/* 數據欄位：金額與幣別獨立 */}
                         <div className="grid grid-cols-3 gap-2 mb-4">
                             <div className="col-span-1 bg-white p-2 rounded-2xl border border-sky-100 shadow-sm">
                                 <p className="text-[8px] font-black text-slate-400 uppercase mb-1">購物金餘額</p>
@@ -92,7 +86,7 @@
                                         <select 
                                             className="text-[9px] font-black text-sky-400 bg-sky-50 py-0.5 px-1.5 rounded-md outline-none pr-3 cursor-pointer"
                                             value={fundSettings.currency}
-                                            onChange={(e) => handleCurrencyChange(e.target.value)}
+                                            onChange={(e) => setFundSettings({ ...fundSettings, currency: e.target.value })}
                                         >
                                             {currencies.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
@@ -114,11 +108,14 @@
                         </div>
                     </header>
 
-                    {/* 列表內容 */}
                     <div className="p-4 space-y-3">
                         {items.filter(i => i.stage === viewMode).map(item => (
                             <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative">
-                                <div className="absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white bg-fuchsia-400 rounded-bl-xl">{item.payer}</div>
+                                {item.payer && (
+                                    <div className={`absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white rounded-bl-xl ${item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-orange-400'}`}>
+                                        {item.payer}
+                                    </div>
+                                )}
                                 <h3 className="text-sm font-black text-slate-800">{item.customerName} ✨</h3>
                                 <p className="text-xs text-slate-400 mt-1">{item.productName}</p>
                                 <div className="mt-3 text-right font-black text-sky-700">NT$ {Number(item.price).toLocaleString()}</div>
@@ -126,7 +123,6 @@
                         ))}
                     </div>
 
-                    {/* 彈窗：新增項目 */}
                     {showModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
@@ -135,10 +131,20 @@
                                     <button onClick={() => setShowModal(false)} className="text-slate-300 text-2xl">&times;</button>
                                 </div>
                                 <div className="space-y-6">
-                                    <div className="flex gap-2">
-                                        {['琳', '璇'].map(p => (
-                                            <button key={p} onClick={() => setFormData({...formData, payer: p})} className={`flex-1 py-4 rounded-2xl text-xs font-black transition-all ${formData.payer === p ? 'bg-slate-800 text-white shadow-lg' : 'bg-slate-50 text-slate-300'}`}>{p}</button>
-                                        ))}
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">代墊人</p>
+                                        <div className="flex gap-2">
+                                            {/* 新增「無」按鈕 */}
+                                            {['', '琳', '璇'].map(p => (
+                                                <button 
+                                                    key={p} 
+                                                    onClick={() => setFormData({...formData, payer: p})} 
+                                                    className={`flex-1 py-4 rounded-2xl text-xs font-black transition-all ${formData.payer === p ? 'bg-slate-800 text-white shadow-lg' : 'bg-slate-50 text-slate-300'}`}
+                                                >
+                                                    {p || '無'}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <input placeholder="客戶名稱" className="w-full bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none" value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} />
