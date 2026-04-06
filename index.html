@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v5.5 | 自定義代墊人版</title>
+    <title>LinTin 協作系統 v5.6</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -15,6 +15,7 @@
         .active-scale:active { transform: scale(0.95); }
         .rotate-anim { animation: rotate 1s linear infinite; }
         @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body>
@@ -48,7 +49,6 @@
             const [isEditing, setIsEditing] = React.useState(null);
             const [items, setItems] = React.useState([]);
             
-            // 代墊人清單
             const [payers, setPayers] = React.useState(JSON.parse(localStorage.getItem('lintin_payers')) || ['琳', '璇']);
             
             const [rates, setRates] = React.useState({ KRW: 0.024, JPY: 0.21, HKD: 4.1, THB: 0.9, AUD: 21.2, NTD: 1 });
@@ -202,11 +202,16 @@
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 mb-4 text-center">
-                            <div className="col-span-1 bg-white p-2 rounded-2xl border border-sky-100 shadow-sm">
+                            <div className="col-span-1 bg-white p-2 rounded-2xl border border-sky-100 shadow-sm overflow-hidden">
                                 <p className="text-[8px] font-black text-slate-400 uppercase mb-1">購物金餘額</p>
-                                <div className="flex items-center gap-1 font-mono justify-center">
-                                    <input type="number" className="w-full text-[11px] font-black text-sky-600 bg-transparent outline-none text-right" value={Math.round(fundSettings.amount)} onChange={(e) => setFundSettings({...fundSettings, amount: e.target.value})} />
-                                    <select className="text-[9px] font-black text-sky-400 bg-sky-50 px-1 rounded outline-none" value={fundSettings.currency} onChange={(e) => setFundSettings({ ...fundSettings, currency: e.target.value })}>
+                                <div className="flex items-center gap-1 font-mono justify-center px-1">
+                                    <input 
+                                        type="number" 
+                                        className="w-full text-[11px] font-black text-sky-600 bg-transparent outline-none text-center" 
+                                        value={Math.round(fundSettings.amount)} 
+                                        onChange={(e) => setFundSettings({...fundSettings, amount: e.target.value})} 
+                                    />
+                                    <select className="text-[9px] font-black text-sky-400 bg-sky-50 px-1 rounded outline-none flex-shrink-0" value={fundSettings.currency} onChange={(e) => setFundSettings({ ...fundSettings, currency: e.target.value })}>
                                         {currencies.map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
                                 </div>
@@ -248,7 +253,7 @@
                     </header>
 
                     <div className="p-4 space-y-4">
-                        {/* 採購清單 */}
+                        {/* 採購清單內容同前 */}
                         {viewMode === 'purchase' && items.filter(i => i.stage === 'purchase').filter(i => i.customerName.includes(searchQuery) || i.productName.includes(searchQuery)).map(item => (
                             <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative overflow-hidden">
                                 <div className={`absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white rounded-bl-xl ${getPayerColor(item.payer)}`}>{item.payer}</div>
@@ -272,7 +277,7 @@
                             </div>
                         ))}
 
-                        {/* 訂單管理 */}
+                        {/* 訂單管理內容同前 */}
                         {viewMode === 'order' && groupedOrders
                             .filter(group => orderFilter === '全部' || group.items.some(i => i.status === orderFilter))
                             .filter(group => group.customerName.includes(searchQuery) || group.items.some(i => i.productName.includes(searchQuery)))
@@ -329,7 +334,7 @@
                         }
                     </div>
 
-                    {/* Modal */}
+                    {/* Modal 同前 */}
                     {showModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 text-left">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
