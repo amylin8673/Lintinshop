@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinTin 協作系統 v3.7</title>
+    <title>LinTin 協作系統 v3.8</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -27,7 +27,8 @@
                 edit: <path d="M14.06 3.02l.92.92L5.92 13H5v-.92l9.06-9.06M17.66 1c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 15.25V21h5.75L19.81 9.94l-3.75-3.75z" />,
                 trash: <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z" />,
                 down: <path d="M7 10l5 5 5-5H7z" />,
-                search: <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+                search: <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />,
+                card: <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" />
             };
             return (
                 <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -46,6 +47,11 @@
             const [isEditing, setIsEditing] = React.useState(null);
             const [items, setItems] = React.useState([]);
             
+            // 匯款五碼彈跳框狀態
+            const [showBankModal, setShowBankModal] = React.useState(false);
+            const [currentBankItem, setCurrentBankItem] = React.useState(null);
+            const [bankCode, setBankCode] = React.useState('');
+
             const [fundSettings, setFundSettings] = React.useState({ amount: 1000000, currency: 'KRW' });
             const [pendingFinance, setPendingFinance] = React.useState(0);
             const [totalProfit, setTotalProfit] = React.useState(0);
@@ -54,7 +60,7 @@
             const exchangeRates = { KRW: 0.024, JPY: 0.21, HKD: 4.1, THB: 0.9, AUD: 21.2, NTD: 1 };
             const orderStatusList = ['全部', '未付款', '已匯款', '待查帳', '已發貨', '已完成'];
 
-            const initialForm = { customerName: '', productName: '', price: '', fee: '', payer: '琳', currency: 'KRW', foreignPrice: '', status: '未付款' };
+            const initialForm = { customerName: '', productName: '', price: '', fee: '', payer: '琳', currency: 'KRW', foreignPrice: '', status: '未付款', bankLastFive: '' };
             const [formData, setFormData] = React.useState(initialForm);
 
             const saveItem = () => {
@@ -67,6 +73,22 @@
                 }
                 setShowModal(false);
                 setFormData(initialForm);
+            };
+
+            const handleStatusChange = (id, newStatus) => {
+                if (newStatus === '已匯款') {
+                    const item = items.find(i => i.id === id);
+                    setCurrentBankItem(item);
+                    setBankCode(item.bankLastFive || '');
+                    setShowBankModal(true);
+                }
+                updateItemStatus(id, newStatus);
+            };
+
+            const saveBankCode = () => {
+                setItems(items.map(item => item.id === currentBankItem.id ? { ...item, bankLastFive: bankCode, status: '已匯款' } : item));
+                setShowBankModal(false);
+                setBankCode('');
             };
 
             const updateItemStatus = (id, newStatus) => {
@@ -101,6 +123,12 @@
                 setViewMode('order');
             };
 
+            const openEdit = (item) => {
+                setIsEditing(item.id);
+                setFormData(item);
+                setShowModal(true);
+            };
+
             if (!inviteCode) {
                 return (
                     <div className="min-h-screen bg-sky-50 flex items-center justify-center p-6 text-center">
@@ -124,8 +152,8 @@
                             <button onClick={() => { setIsEditing(null); setFormData(initialForm); setShowModal(true); }} className="bg-sky-600 text-white p-2.5 rounded-xl shadow-lg active-scale">＋</button>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 mb-4">
-                            <div className="col-span-1 bg-white p-2 rounded-2xl border border-sky-100 shadow-sm text-center">
+                        <div className="grid grid-cols-3 gap-2 mb-4 text-center">
+                            <div className="col-span-1 bg-white p-2 rounded-2xl border border-sky-100 shadow-sm">
                                 <p className="text-[8px] font-black text-slate-400 uppercase mb-1">購物金餘額</p>
                                 <div className="flex items-center gap-1 font-mono justify-center">
                                     <input type="number" className="w-full text-[11px] font-black text-sky-600 bg-transparent outline-none text-right" value={Math.round(fundSettings.amount)} onChange={(e) => setFundSettings({...fundSettings, amount: e.target.value})} />
@@ -134,11 +162,11 @@
                                     </select>
                                 </div>
                             </div>
-                            <div className="bg-white p-2 rounded-2xl border border-sky-100 shadow-sm text-center">
+                            <div className="bg-white p-2 rounded-2xl border border-sky-100 shadow-sm">
                                 <p className="text-[8px] font-black text-slate-400 mb-1 uppercase">待收帳款</p>
                                 <p className="text-[11px] font-black text-amber-500 italic truncate font-mono">NT$ {pendingFinance.toLocaleString()}</p>
                             </div>
-                            <div className="bg-white p-2 rounded-2xl border border-sky-100 shadow-sm text-center">
+                            <div className="bg-white p-2 rounded-2xl border border-sky-100 shadow-sm">
                                 <p className="text-[8px] font-black text-slate-400 mb-1 uppercase">累積利潤</p>
                                 <p className="text-[11px] font-black text-emerald-500 italic truncate font-mono">NT$ {totalProfit.toLocaleString()}</p>
                             </div>
@@ -153,7 +181,6 @@
                             ))}
                         </div>
 
-                        {/* 訂單管理專屬導覽標籤列 */}
                         {viewMode === 'order' && (
                             <div className="pb-4 space-y-3">
                                 <div className="relative">
@@ -162,11 +189,7 @@
                                 </div>
                                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
                                     {orderStatusList.map(status => (
-                                        <button 
-                                            key={status} 
-                                            onClick={() => setOrderFilter(status)}
-                                            className={`whitespace-nowrap px-4 py-1.5 rounded-full text-[10px] font-black transition-all border ${orderFilter === status ? 'bg-sky-500 text-white border-sky-500 shadow-md' : 'bg-white text-slate-400 border-slate-100 hover:border-sky-200 active-scale'}`}
-                                        >
+                                        <button key={status} onClick={() => setOrderFilter(status)} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-[10px] font-black transition-all border ${orderFilter === status ? 'bg-sky-500 text-white border-sky-500 shadow-md' : 'bg-white text-slate-400 border-slate-100 active-scale'}`}>
                                             {status}
                                         </button>
                                     ))}
@@ -181,16 +204,19 @@
                             .filter(i => orderFilter === '全部' || i.status === orderFilter || viewMode === 'purchase')
                             .filter(i => i.customerName.includes(searchQuery) || i.productName.includes(searchQuery))
                             .map(item => (
-                            <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative overflow-hidden active:bg-slate-50 transition-all">
+                            <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 relative overflow-hidden transition-all">
                                 {item.payer && (
                                     <div className={`absolute top-0 right-0 px-4 py-1 text-[9px] font-black text-white rounded-bl-xl shadow-sm ${item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-orange-400'}`}>
                                         {item.payer}
                                     </div>
                                 )}
 
-                                <div className="flex justify-between items-start text-left">
+                                <div className="flex justify-between items-start">
                                     <div className="flex-1 pr-4">
-                                        <h3 className="text-sm font-black text-slate-800">{item.customerName} <span className="text-sky-300 text-[10px]">●</span></h3>
+                                        <h3 className="text-sm font-black text-slate-800 flex items-center gap-1.5">
+                                            {item.customerName}
+                                            {item.bankLastFive && <span className="bg-slate-100 text-slate-500 text-[8px] px-1.5 py-0.5 rounded-md font-mono">#{item.bankLastFive}</span>}
+                                        </h3>
                                         <p className="text-xs text-slate-400 mt-1 mb-4 leading-relaxed line-clamp-2 font-medium">{item.productName}</p>
                                         <div className="flex gap-2">
                                             <button onClick={() => openEdit(item)} className="bg-slate-50 text-slate-400 p-2.5 rounded-xl hover:text-sky-600 active-scale"><Icon name="edit" /></button>
@@ -206,14 +232,13 @@
                                         </div>
 
                                         {viewMode === 'purchase' ? (
-                                            <button onClick={() => markAsBought(item.id)} className="bg-sky-50 text-sky-600 text-[10px] font-black px-5 py-2.5 rounded-xl active-scale border border-sky-100 shadow-sm hover:bg-sky-600 hover:text-white transition-all">已買到</button>
+                                            <button onClick={() => markAsBought(item.id)} className="bg-sky-50 text-sky-600 text-[10px] font-black px-5 py-2.5 rounded-xl active-scale border border-sky-100 shadow-sm">已買到</button>
                                         ) : (
-                                            /* 卡片內的下拉狀態切換 */
                                             <div className="relative">
                                                 <select 
                                                     className={`appearance-none pl-3 pr-8 py-1.5 rounded-xl text-[9px] font-black border shadow-sm outline-none cursor-pointer transition-all ${item.status === '已完成' ? 'bg-emerald-50 text-emerald-500 border-emerald-100' : 'bg-amber-50 text-amber-500 border-amber-100'}`}
                                                     value={item.status}
-                                                    onChange={(e) => updateItemStatus(item.id, e.target.value)}
+                                                    onChange={(e) => handleStatusChange(item.id, e.target.value)}
                                                 >
                                                     {orderStatusList.filter(s => s !== '全部').map(s => <option key={s} value={s}>{s}</option>)}
                                                 </select>
@@ -226,11 +251,36 @@
                         ))}
                     </div>
 
+                    {/* 匯款五碼彈跳框 */}
+                    {showBankModal && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-6">
+                            <div className="bg-white w-full max-w-xs rounded-[32px] p-8 shadow-2xl text-center">
+                                <div className="bg-amber-50 w-14 h-14 rounded-2xl flex items-center justify-center text-amber-500 mx-auto mb-4 shadow-inner">
+                                    <Icon name="card" className="w-7 h-7" />
+                                </div>
+                                <h3 className="text-lg font-black text-slate-800 mb-2">紀錄匯款資訊</h3>
+                                <p className="text-xs text-slate-400 mb-6 font-medium">請輸入「{currentBankItem?.customerName}」的匯款後五碼</p>
+                                <input 
+                                    type="number" 
+                                    placeholder="後五碼 (例: 12345)" 
+                                    className="w-full bg-slate-50 p-4 rounded-2xl font-black text-center text-lg text-sky-600 outline-none border-2 border-transparent focus:border-sky-100 mb-6"
+                                    value={bankCode}
+                                    onChange={e => setBankCode(e.target.value)}
+                                    autoFocus
+                                />
+                                <div className="flex gap-3">
+                                    <button onClick={() => setShowBankModal(false)} className="flex-1 py-4 rounded-2xl text-xs font-black text-slate-400 bg-slate-50 active-scale">取消</button>
+                                    <button onClick={saveBankCode} className="flex-1 py-4 rounded-2xl text-xs font-black text-white bg-sky-600 shadow-lg shadow-sky-200 active-scale">儲存紀錄</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {showModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 text-left">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
                                 <div className="flex justify-between items-center mb-8">
-                                    <h2 className="text-xl font-black italic text-sky-900 leading-none">{isEditing ? '編輯項目' : '新增項目'}</h2>
+                                    <h2 className="text-xl font-black italic text-sky-900">{isEditing ? '編輯項目' : '新增項目'}</h2>
                                     <button onClick={() => setShowModal(false)} className="text-slate-300 text-3xl leading-none">&times;</button>
                                 </div>
                                 <div className="space-y-6">
@@ -278,7 +328,7 @@
                                         <input type="number" placeholder="台幣成本" className="w-full bg-sky-50 p-4 rounded-2xl font-black text-sm text-sky-600 outline-none shadow-sm" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
                                         <input type="number" placeholder="預期利潤" className="w-full bg-emerald-50 p-4 rounded-2xl font-black text-sm text-emerald-600 outline-none shadow-sm" value={formData.fee} onChange={e => setFormData({...formData, fee: e.target.value})} />
                                     </div>
-                                    <button onClick={saveItem} className="w-full bg-sky-600 text-white py-5 rounded-3xl font-black shadow-xl active-scale transition-all hover:bg-sky-700">儲存項目</button>
+                                    <button onClick={saveItem} className="w-full bg-sky-600 text-white py-5 rounded-3xl font-black shadow-xl active-scale hover:bg-sky-700">儲存項目</button>
                                 </div>
                             </div>
                         </div>
