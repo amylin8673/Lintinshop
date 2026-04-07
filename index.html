@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 v37.3</title>
+    <title>LinTin 系統 v37.4</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -15,7 +15,6 @@
         .active-scale:active { transform: scale(0.96); }
         .field-label { font-size: 10px; font-weight: 900; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; margin-left: 4px; text-align: left; }
         .field-value { background-color: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 700; color: #1E293B; width: 100%; text-align: left; }
-        /* 隱藏輸入框邊框使其看起來像文字 */
         .stat-input { background: transparent; border: none; padding: 0; font-weight: 900; outline: none; width: 100%; text-align: left; }
     </style>
 </head>
@@ -48,7 +47,6 @@
             const [showModal, setShowModal] = useState(false);
             const [isEditing, setIsEditing] = useState(null);
 
-            // 功能：末五碼狀態
             const [showBankModal, setShowBankModal] = useState(false);
             const [bankData, setBankData] = useState({ customer: '', lastFive: '' });
 
@@ -56,6 +54,13 @@
 
             useEffect(() => { localStorage.setItem('lt_items', JSON.stringify(items)); }, [items]);
             useEffect(() => { localStorage.setItem('lt_credit', JSON.stringify(credit)); }, [credit]);
+
+            // 恢復：幣別切換邏輯
+            const toggleCurrency = () => {
+                const curs = Object.keys(rates).filter(c => c !== 'NTD');
+                const next = curs[(curs.indexOf(credit.cur) + 1) % curs.length];
+                setCredit({ ...credit, cur: next });
+            };
 
             const handleStatusChange = (customerName, newStatus) => {
                 if (newStatus === '已匯款') {
@@ -113,12 +118,14 @@
                             <button onClick={() => { setForm({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款', lastFive: '' }); setIsEditing(null); setShowModal(true); }} className="bg-sky-500 text-white px-5 py-2.5 rounded-full font-black text-sm active-scale shadow-lg">+ 新增項目</button>
                         </div>
 
-                        {/* 修改：點擊數據卡片即可編輯 */}
                         <div className="grid grid-cols-3 gap-2 mb-5">
                             <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-left">
                                 <p className="text-[10px] font-bold text-slate-400 mb-1">庫存餘額</p>
                                 <div className="flex flex-col">
-                                    <input type="number" className="stat-input text-[11px] text-amber-500" value={credit.foreign} onChange={e => setCredit({...credit, foreign: e.target.value})} />
+                                    <div className="flex items-center gap-1">
+                                        <input type="number" className="stat-input text-[11px] text-amber-500 w-16" value={credit.foreign} onChange={e => setCredit({...credit, foreign: e.target.value})} />
+                                        <button onClick={toggleCurrency} className="text-[10px] bg-amber-50 text-amber-600 px-1 rounded font-black active:scale-90">{credit.cur}</button>
+                                    </div>
                                     <div className="flex items-center text-[11px] font-black text-slate-800">
                                         $<input type="number" className="stat-input flex-1 ml-0.5" value={credit.ntd} onChange={e => setCredit({...credit, ntd: e.target.value})} />
                                     </div>
@@ -200,11 +207,11 @@
                                         <div key={item.id} className="bg-slate-50/40 p-4 rounded-2xl border border-slate-100 flex justify-between items-center">
                                             <div className="flex-1">
                                                 <p className="text-xs font-black text-slate-700 mb-1">{item.product}</p>
-                                                <p className="text-[10px] font-bold text-slate-400">NT$ {Number(item.price).toLocaleString()} <span className="mx-1">/</span> {item.fPrice} {item.cur}</p>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase">NT$ {Number(item.price).toLocaleString()} <span className="mx-1">/</span> {item.fPrice} {item.cur}</p>
                                             </div>
                                             <div className="flex gap-4 ml-4">
-                                                <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="text-slate-300"><Icon name="edit" className="w-3.5 h-3.5" /></button>
-                                                <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="text-rose-200"><Icon name="trash" className="w-3.5 h-3.5" /></button>
+                                                <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="text-slate-300 active-scale"><Icon name="edit" className="w-3.5 h-3.5" /></button>
+                                                <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="text-rose-200 active-scale"><Icon name="trash" className="w-3.5 h-3.5" /></button>
                                             </div>
                                         </div>
                                     ))}
@@ -213,15 +220,14 @@
                         ))}
                     </div>
 
-                    {/* 末五碼彈窗 */}
                     {showBankModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 text-left">
                             <div className="bg-white w-full max-w-xs rounded-[32px] p-8 shadow-2xl text-center">
-                                <h3 className="text-lg font-black text-slate-800 mb-4">輸入末五碼</h3>
-                                <input autoFocus type="tel" maxLength="5" className="w-full field-value text-center text-2xl tracking-widest outline-none mb-6" value={bankData.lastFive} onChange={e => setBankData({...bankData, lastFive: e.target.value})} />
+                                <h3 className="text-lg font-black text-slate-800 mb-4 italic">Confirm Bank</h3>
+                                <input autoFocus type="tel" maxLength="5" placeholder="00000" className="w-full field-value text-center text-2xl tracking-widest outline-none mb-6" value={bankData.lastFive} onChange={e => setBankData({...bankData, lastFive: e.target.value})} />
                                 <div className="flex gap-3">
-                                    <button onClick={() => setShowBankModal(false)} className="flex-1 bg-slate-100 text-slate-400 py-3 rounded-xl font-black">取消</button>
-                                    <button onClick={() => updateCustomerStatus(bankData.customer, '已匯款', bankData.lastFive)} className="flex-1 bg-sky-500 text-white py-3 rounded-xl font-black">確認</button>
+                                    <button onClick={() => setShowBankModal(false)} className="flex-1 bg-slate-100 text-slate-400 py-3 rounded-xl font-black text-sm">取消</button>
+                                    <button onClick={() => updateCustomerStatus(bankData.customer, '已匯款', bankData.lastFive)} className="flex-1 bg-sky-500 text-white py-3 rounded-xl font-black text-sm">確認</button>
                                 </div>
                             </div>
                         </div>
