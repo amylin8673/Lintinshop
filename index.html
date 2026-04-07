@@ -3,21 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 v26.0</title>
+    <title>LinTin 系統 v27.0</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #F1F5F9; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #F8FAFC; -webkit-tap-highlight-color: transparent; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .active-scale:active { transform: scale(0.96); }
-        /* 框外標籤格式 */
+        /* 框外小標籤格式 */
         .field-label { font-size: 10px; font-weight: 900; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; margin-left: 4px; }
-        .field-value { background-color: #F8FAFC; border: 1px solid #F1F5F9; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 700; color: #1E293B; }
-        /* 大數據面板樣式 */
-        .big-stat-card { background: white; padding: 16px; border-radius: 24px; border: 1px solid #E2E8F0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .field-value { background-color: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 700; color: #1E293B; }
     </style>
 </head>
 <body>
@@ -39,7 +37,7 @@
 
         const App = () => {
             const [items, setItems] = useState(() => JSON.parse(localStorage.getItem('lt_items')) || []);
-            const [pCats, setPCats] = useState(() => JSON.parse(localStorage.getItem('lt_p_cats')) || ['預設', '服飾']);
+            const [pCats, setPCats] = useState(() => JSON.parse(localStorage.getItem('lt_p_cats')) || ['預設', '韓國東大門']);
             const [credit, setCredit] = useState(() => JSON.parse(localStorage.getItem('lt_credit')) || { ntd: 0, foreign: 0, cur: 'KRW' });
             const [rates] = useState({ KRW: 0.024, JPY: 0.21, THB: 0.9, HKD: 4.1, AUD: 21.2, NTD: 1 });
             const orderStatuses = ['全部', '待付款', '已匯款', '待查帳', '已出貨', '完成'];
@@ -70,11 +68,11 @@
 
             return (
                 <div className="min-h-screen pb-10 text-slate-900">
-                    <header className="bg-white sticky top-0 z-40 border-b border-slate-200 p-5 text-left">
-                        <div className="flex justify-between items-center mb-6">
+                    <header className="bg-white sticky top-0 z-40 border-b border-slate-100 p-5 text-left">
+                        <div className="flex justify-between items-center mb-5">
                             <div className="flex items-center gap-2">
-                                <div className="bg-slate-900 p-2.5 rounded-xl text-white shadow-lg"><Icon name="box" className="w-6 h-6" /></div>
-                                <h1 className="text-2xl font-black italic tracking-tighter">LinTin</h1>
+                                <div className="bg-slate-900 p-2 rounded-xl text-white shadow-lg"><Icon name="box" className="w-5 h-5" /></div>
+                                <h1 className="text-xl font-black italic tracking-tighter">LinTin</h1>
                             </div>
                             <button onClick={() => { 
                                 setForm({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款' }); 
@@ -84,30 +82,26 @@
                             </button>
                         </div>
 
-                        {/* 大數據面板 (恢復原本的大小) */}
-                        <div className="space-y-3 mb-6">
-                            <div onClick={() => { setTempCredit({...credit}); setShowCreditModal(true); }} className="big-stat-card border-l-8 border-l-amber-400 active-scale">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">基金庫存 Balance</p>
-                                <div className="flex justify-between items-end">
-                                    <p className="text-lg font-black text-amber-600 leading-none">{credit.foreign} {credit.cur}</p>
-                                    <p className="text-sm font-bold text-slate-400">≈ NT$ {Number(credit.ntd).toLocaleString()}</p>
-                                </div>
+                        {/* 恢復原本格式的數據面板 */}
+                        <div className="grid grid-cols-3 gap-2 mb-5">
+                            <div onClick={() => { setTempCredit({...credit}); setShowCreditModal(true); }} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm active-scale">
+                                <p className="text-[10px] font-bold text-slate-400 mb-1">基金庫存</p>
+                                <p className="text-[11px] font-black text-amber-500 truncate leading-none mb-1">{credit.foreign} {credit.cur}</p>
+                                <p className="text-[11px] font-black text-slate-800 leading-none">${Number(credit.ntd).toLocaleString()}</p>
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="big-stat-card border-l-8 border-l-indigo-400 bg-indigo-50/20">
-                                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">待收訂單</p>
-                                    <p className="text-xl font-black text-indigo-700">${stats.pending.toLocaleString()}</p>
-                                </div>
-                                <div className="big-stat-card border-l-8 border-l-emerald-400 bg-emerald-50/20">
-                                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">累計利潤</p>
-                                    <p className="text-xl font-black text-emerald-700">${stats.profit.toLocaleString()}</p>
-                                </div>
+                            <div className="bg-amber-50/50 p-3 rounded-2xl border border-amber-100/50">
+                                <p className="text-[10px] font-bold text-amber-600 mb-1">待收訂單</p>
+                                <p className="text-xs font-black text-amber-700 mt-1">${stats.pending.toLocaleString()}</p>
+                            </div>
+                            <div className="bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100/50">
+                                <p className="text-[10px] font-bold text-emerald-600 mb-1">累計利潤</p>
+                                <p className="text-xs font-black text-emerald-700 mt-1">${stats.profit.toLocaleString()}</p>
                             </div>
                         </div>
 
-                        <div className="flex gap-8 border-b border-slate-100 mb-3 px-2">
-                            <button onClick={() => setViewMode('purchase')} className={`pb-2 text-sm font-black transition-all ${viewMode === 'purchase' ? 'text-sky-600 border-b-4 border-sky-600' : 'text-slate-400'}`}>採購清單</button>
-                            <button onClick={() => setViewMode('order')} className={`pb-2 text-sm font-black transition-all ${viewMode === 'order' ? 'text-indigo-600 border-b-4 border-indigo-600' : 'text-slate-400'}`}>訂單管理</button>
+                        <div className="flex gap-6 border-b border-slate-50 mb-3 px-1">
+                            <button onClick={() => setViewMode('purchase')} className={`pb-2 text-sm font-black transition-all ${viewMode === 'purchase' ? 'text-sky-600 border-b-2 border-sky-600' : 'text-slate-400'}`}>採購清單</button>
+                            <button onClick={() => setViewMode('order')} className={`pb-2 text-sm font-black transition-all ${viewMode === 'order' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400'}`}>訂單管理</button>
                         </div>
 
                         <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
@@ -124,10 +118,11 @@
                         </div>
                     </header>
 
+                    {/* 項目列表：維持大卡片與框外標籤 */}
                     <div className="p-4 space-y-6 text-left">
                         {filteredItems.map(item => (
                             <div key={item.id} className="bg-white rounded-[28px] p-6 shadow-sm border border-slate-200 relative">
-                                <div className={`absolute top-5 right-5 px-4 py-1.5 rounded-full text-[10px] font-black text-white shadow-sm ${item.payer === '璇' ? 'bg-sky-400' : item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-slate-300'}`}>{item.payer}</div>
+                                <div className={`absolute top-5 right-5 px-3 py-1.5 rounded-full text-[10px] font-black text-white shadow-sm ${item.payer === '璇' ? 'bg-sky-400' : item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-slate-300'}`}>{item.payer}</div>
                                 
                                 <div className="space-y-5">
                                     <div>
@@ -141,11 +136,11 @@
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <p className="field-label">分類標籤 Tag</p>
-                                            <div className="field-value bg-sky-50/50 border-sky-100 text-sky-700 text-xs font-black">{item.cat}</div>
+                                            <div className="field-value bg-sky-50/30 border-sky-100 text-sky-700 text-xs font-black">{item.cat}</div>
                                         </div>
                                         <div>
                                             <p className="field-label">利潤 Profit</p>
-                                            <div className="field-value bg-emerald-50/50 border-emerald-100 text-emerald-700 text-xs font-black">
+                                            <div className="field-value bg-emerald-50/30 border-emerald-100 text-emerald-700 text-xs font-black">
                                                 $ {Number(item.fee || 0).toLocaleString()}
                                             </div>
                                         </div>
@@ -154,22 +149,19 @@
 
                                 <div className="mt-6 pt-5 border-t border-slate-100 flex justify-between items-center">
                                     <div className="flex gap-2">
-                                        <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="p-3 bg-slate-50 text-slate-400 rounded-2xl active-scale border border-slate-100"><Icon name="edit" className="w-5 h-5" /></button>
-                                        <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-3 bg-slate-50 text-slate-400 rounded-2xl active-scale border border-slate-100"><Icon name="trash" className="w-5 h-5" /></button>
+                                        <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="p-3 bg-slate-50 text-slate-400 rounded-xl active-scale"><Icon name="edit" /></button>
+                                        <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-3 bg-slate-50 text-slate-400 rounded-xl active-scale"><Icon name="trash" /></button>
                                     </div>
                                     
                                     <div className="flex flex-col items-end gap-1">
                                         {viewMode === 'purchase' ? (
-                                            <button onClick={() => setItems(items.map(i => i.id === item.id ? {...i, stage:'order', orderStatus:'待付款'} : i))} className="bg-slate-900 text-white text-[11px] font-black px-6 py-2.5 rounded-xl active-scale shadow-lg shadow-slate-100">標記已買到</button>
+                                            <button onClick={() => setItems(items.map(i => i.id === item.id ? {...i, stage:'order', orderStatus:'待付款'} : i))} className="bg-slate-900 text-white text-[11px] font-black px-6 py-2.5 rounded-xl active-scale shadow-lg">完成採購</button>
                                         ) : (
-                                            <div className="relative">
-                                                <select className={`pl-4 pr-10 py-2.5 rounded-xl text-[11px] font-black appearance-none outline-none shadow-sm transition-all ${item.orderStatus === '完成' ? 'bg-emerald-500 text-white' : 'bg-indigo-600 text-white'}`} value={item.orderStatus} onChange={e => setItems(items.map(i => i.id === item.id ? {...i, orderStatus:e.target.value} : i))}>
-                                                    {orderStatuses.filter(s => s !== '全部').map(s => <option key={s} value={s}>{s}</option>)}
-                                                </select>
-                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/70 text-[8px]">▼</span>
-                                            </div>
+                                            <select className={`px-4 py-2 rounded-xl text-[11px] font-black appearance-none outline-none text-white shadow-sm transition-all ${item.orderStatus === '完成' ? 'bg-emerald-500' : 'bg-indigo-600'}`} value={item.orderStatus} onChange={e => setItems(items.map(i => i.id === item.id ? {...i, orderStatus:e.target.value} : i))}>
+                                                {orderStatuses.filter(s => s !== '全部').map(s => <option key={s} value={s}>{s}</option>)}
+                                            </select>
                                         )}
-                                        <div className="text-right mt-1">
+                                        <div className="text-right">
                                             <p className="text-[10px] text-slate-300 font-mono leading-none mb-1 uppercase tracking-tighter">{item.fPrice} {item.cur}</p>
                                             <p className="text-xl font-black text-slate-900 leading-none">NT$ {Number(item.price).toLocaleString()}</p>
                                         </div>
@@ -179,7 +171,7 @@
                         ))}
                     </div>
 
-                    {/* Modals 保持不變，維持你的視覺偏好 */}
+                    {/* Modals 保持原本設計 */}
                     {showCreditModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
                             <div className="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl text-left">
@@ -190,14 +182,8 @@
                                             <button key={c} onClick={() => setTempCredit({...tempCredit, cur: c})} className={`flex-1 min-w-[60px] py-2.5 rounded-xl text-[11px] font-black transition-all ${tempCredit.cur === c ? 'bg-amber-500 text-white shadow-md' : 'bg-slate-50 text-slate-400'}`}>{c}</button>
                                         ))}
                                     </div>
-                                    <div>
-                                        <p className="field-label">外幣金額 Foreign</p>
-                                        <input type="number" className="w-full field-value outline-none" value={tempCredit.foreign} onChange={e => setTempCredit({...tempCredit, foreign: e.target.value})} />
-                                    </div>
-                                    <div>
-                                        <p className="field-label">台幣等值 NTD</p>
-                                        <input type="number" className="w-full field-value outline-none" value={tempCredit.ntd} onChange={e => setTempCredit({...tempCredit, ntd: e.target.value})} />
-                                    </div>
+                                    <input type="number" className="w-full field-value outline-none" value={tempCredit.foreign} onChange={e => setTempCredit({...tempCredit, foreign: e.target.value})} />
+                                    <input type="number" className="w-full field-value outline-none" value={tempCredit.ntd} onChange={e => setTempCredit({...tempCredit, ntd: e.target.value})} />
                                     <button onClick={() => { setCredit({...tempCredit}); setShowCreditModal(false); }} className="w-full bg-slate-900 text-white py-4 rounded-[20px] font-black active-scale shadow-xl shadow-slate-200">儲存變更</button>
                                     <button onClick={() => setShowCreditModal(false)} className="w-full text-slate-400 text-xs font-bold text-center">取消</button>
                                 </div>
