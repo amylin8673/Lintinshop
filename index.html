@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 v16.0</title>
+    <title>LinTin 系統 v17.0</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -34,8 +34,12 @@
         };
 
         const App = () => {
+            // 優先從本地讀取資料，若無則使用預設值
             const [items, setItems] = useState(() => JSON.parse(localStorage.getItem('lt_items')) || []);
-            const [pCats, setPCats] = useState(() => JSON.parse(localStorage.getItem('lt_p_cats')) || ['預設', '服飾']);
+            const [pCats, setPCats] = useState(() => {
+                const saved = JSON.parse(localStorage.getItem('lt_p_cats'));
+                return (saved && saved.length > 0) ? saved : ['預設', '服飾'];
+            });
             const [credit, setCredit] = useState(() => JSON.parse(localStorage.getItem('lt_credit')) || { ntd: 0, foreign: 0, cur: 'KRW' });
             
             const [rates, setRates] = useState({ KRW: 0.024, JPY: 0.21, THB: 0.9, HKD: 4.1, AUD: 21.2, NTD: 1 });
@@ -43,7 +47,6 @@
             
             const [viewMode, setViewMode] = useState('purchase');
             const [activePCat, setActivePCat] = useState('全部');
-            const [activeOCat, setActiveOCat] = useState('全部');
             
             const [showModal, setShowModal] = useState(false);
             const [showCreditModal, setShowCreditModal] = useState(false);
@@ -52,16 +55,31 @@
             const [form, setForm] = useState({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款' });
             const [tempCredit, setTempCredit] = useState({ ntd: 0, foreign: 0, cur: 'KRW' });
 
-            useEffect(() => {
-                localStorage.setItem('lt_items', JSON.stringify(items));
-                localStorage.setItem('lt_p_cats', JSON.stringify(pCats));
-                localStorage.setItem('lt_credit', JSON.stringify(credit));
-            }, [items, pCats, credit]);
+            // 獨立監聽：只要任何資料變動就分別存入 localStorage
+            useEffect(() => { localStorage.setItem('lt_items', JSON.stringify(items)); }, [items]);
+            useEffect(() => { 
+                if (pCats.length > 0) localStorage.setItem('lt_p_cats', JSON.stringify(pCats)); 
+            }, [pCats]);
+            useEffect(() => { localStorage.setItem('lt_credit', JSON.stringify(credit)); }, [credit]);
 
             const stats = useMemo(() => ({
                 profit: items.reduce((s, i) => s + Number(i.fee || 0), 0),
                 pending: items.filter(i => i.stage === 'order' && i.orderStatus !== '完成').reduce((s, i) => s + Number(i.price || 0), 0)
             }), [items]);
+
+            const handleSaveItem = () => {
+                // 如果輸入的新分類不在清單中，自動加入
+                if (form.cat && !pCats.includes(form.cat)) {
+                    setPCats(prev => [...prev, form.cat]);
+                }
+                
+                if (isEditing) {
+                    setItems(items.map(i => i.id === isEditing ? { ...form, id: isEditing } : i));
+                } else {
+                    setItems([{ ...form, id: Date.now(), stage: viewMode }, ...items]);
+                }
+                setShowModal(false);
+            };
 
             return (
                 <div className="min-h-screen pb-10 text-slate-900 bg-[#F8FAFC]">
@@ -71,22 +89,26 @@
                                 <div className="bg-sky-600 p-2 rounded-xl text-white"><Icon name="box" /></div>
                                 <h1 className="text-2xl font-black text-sky-900 italic">LinTin</h1>
                             </div>
-                            <button onClick={() => { setForm({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款' }); setIsEditing(null); setShowModal(true); }} className="bg-sky-600 text-white p-3 rounded-2xl shadow-lg active-scale">
+                            <button onClick={() => { 
+                                setForm({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款' }); 
+                                setIsEditing(null); 
+                                setShowModal(true); 
+                            }} className="bg-sky-600 text-white p-3 rounded-2xl shadow-lg active-scale">
                                 <Icon name="plus" className="w-5 h-5" />
                             </button>
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 mb-4">
-                            <div onClick={() => { setTempCredit({...credit}); setShowCreditModal(true); }} className="bg-slate-50 p-3 rounded-2xl border border-slate-100 cursor-pointer active-scale">
+                            <div onClick={() => { setTempCredit({...credit}); setShowCreditModal(true); }} className="bg-slate-50 p-3 rounded-2xl border border-slate-100 cursor-pointer active-scale text-left">
                                 <p className="text-[8px] font-black text-slate-400 uppercase">基金庫存</p>
                                 <p className="text-[10px] font-bold text-amber-600 truncate">{credit.foreign} {credit.cur}</p>
                                 <p className="text-[10px] font-bold text-slate-700 truncate">${Number(credit.ntd).toLocaleString()}</p>
                             </div>
-                            <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100">
+                            <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100 text-left">
                                 <p className="text-[8px] font-black text-amber-600/70 uppercase">待收訂單</p>
                                 <p className="text-xs font-bold text-amber-700 mt-1">${stats.pending.toLocaleString()}</p>
                             </div>
-                            <div className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100">
+                            <div className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100 text-left">
                                 <p className="text-[8px] font-black text-emerald-600/70 uppercase">累計利潤</p>
                                 <p className="text-xs font-bold text-emerald-700 mt-1">${stats.profit.toLocaleString()}</p>
                             </div>
@@ -96,21 +118,37 @@
                             <button onClick={() => setViewMode('purchase')} className={`flex-1 pb-2 text-xs font-black ${viewMode === 'purchase' ? 'text-sky-600 border-b-2 border-sky-600' : 'text-slate-400'}`}>採購清單</button>
                             <button onClick={() => setViewMode('order')} className={`flex-1 pb-2 text-xs font-black ${viewMode === 'order' ? 'text-sky-600 border-b-2 border-sky-600' : 'text-slate-400'}`}>訂單管理</button>
                         </div>
+
+                        {viewMode === 'purchase' && (
+                            <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+                                <button onClick={() => setActivePCat('全部')} className={`px-3 py-1 rounded-full text-[10px] font-bold whitespace-nowrap ${activePCat === '全部' ? 'bg-sky-500 text-white' : 'bg-slate-100 text-slate-400'}`}>全部</button>
+                                {pCats.map(c => (
+                                    <button key={c} onClick={() => setActivePCat(c)} className={`px-3 py-1 rounded-full text-[10px] font-bold whitespace-nowrap ${activePCat === c ? 'bg-sky-500 text-white' : 'bg-slate-100 text-slate-400'}`}>{c}</button>
+                                ))}
+                            </div>
+                        )}
                     </header>
 
                     <div className="p-4 space-y-4">
-                        {items.filter(i => i.stage === viewMode).map(item => (
+                        {items.filter(i => i.stage === viewMode && (viewMode === 'order' || activePCat === '全部' || i.cat === activePCat)).map(item => (
                             <div key={item.id} className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm relative text-left">
                                 <div className={`absolute top-0 right-0 px-3 py-1 text-[9px] font-bold text-white rounded-bl-xl ${item.payer === '璇' ? 'bg-sky-400' : item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-slate-400'}`}>{item.payer}</div>
-                                <h3 className="font-black text-slate-900">{item.customer} <span className="text-[10px] text-slate-300 ml-1">#{item.cat}</span></h3>
+                                <h3 className="font-black text-slate-900">{item.customer} <span className="text-[10px] text-sky-400 font-bold ml-1">{item.cat}</span></h3>
                                 <p className="text-xs text-amber-700 font-bold mb-3">{item.product}</p>
                                 <div className="flex justify-between items-end">
                                     <div className="flex gap-2">
-                                        <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="p-2 bg-slate-50 text-slate-400 rounded-lg"><Icon name="edit" /></button>
-                                        <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2 bg-slate-50 text-slate-400 rounded-lg"><Icon name="trash" /></button>
+                                        <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="p-2 bg-slate-50 text-slate-400 rounded-lg active-scale"><Icon name="edit" /></button>
+                                        <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2 bg-slate-50 text-slate-400 rounded-lg active-scale"><Icon name="trash" /></button>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-[10px] text-slate-300 font-mono">{item.fPrice} {item.cur}</p>
+                                        {viewMode === 'purchase' ? (
+                                            <button onClick={() => setItems(items.map(i => i.id === item.id ? {...i, stage:'order', orderStatus:'待付款'} : i))} className="bg-sky-600 text-white text-[10px] font-black px-4 py-2 rounded-xl mb-2 active-scale">已買到</button>
+                                        ) : (
+                                            <select className="bg-indigo-500 text-white text-[10px] font-black px-2 py-1 rounded-lg mb-2 outline-none" value={item.orderStatus} onChange={e => setItems(items.map(i => i.id === item.id ? {...i, orderStatus:e.target.value} : i))}>
+                                                {orderStatuses.map(s => <option key={s} value={s}>{s}</option>)}
+                                            </select>
+                                        )}
+                                        <p className="text-[10px] text-slate-300 font-mono leading-none">{item.fPrice} {item.cur}</p>
                                         <p className="text-lg font-black text-sky-700 leading-none">NT$ {item.price}</p>
                                     </div>
                                 </div>
@@ -118,68 +156,46 @@
                         ))}
                     </div>
 
-                    {/* 基金修改視窗 - 徹底解鎖版 */}
+                    {/* 基金視窗 */}
                     {showCreditModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
                             <div className="bg-white w-full max-w-sm rounded-[32px] p-6 shadow-2xl text-left">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-xl font-black text-slate-800 italic">設定基金庫存</h2>
-                                    <button onClick={() => setShowCreditModal(false)} className="text-slate-300 text-2xl">&times;</button>
-                                </div>
+                                <h2 className="text-xl font-black text-slate-800 mb-6 italic">設定基金庫存</h2>
                                 <div className="space-y-4">
-                                    <div>
-                                        <label className="text-[10px] font-black text-slate-400 block mb-1">選擇外幣</label>
-                                        <div className="flex gap-1">
-                                            {['KRW', 'JPY', 'THB', 'HKD', 'AUD'].map(c => (
-                                                <button key={c} onClick={() => setTempCredit({...tempCredit, cur: c})} className={`flex-1 py-2 rounded-lg text-[10px] font-black ${tempCredit.cur === c ? 'bg-amber-500 text-white' : 'bg-slate-50 text-slate-400'}`}>{c}</button>
-                                            ))}
-                                        </div>
+                                    <div className="flex gap-1 overflow-x-auto pb-2 no-scrollbar">
+                                        {['KRW', 'JPY', 'THB', 'HKD', 'AUD'].map(c => (
+                                            <button key={c} onClick={() => setTempCredit({...tempCredit, cur: c})} className={`flex-1 min-w-[50px] py-2 rounded-lg text-[10px] font-black ${tempCredit.cur === c ? 'bg-amber-500 text-white' : 'bg-slate-50 text-slate-400'}`}>{c}</button>
+                                        ))}
                                     </div>
-                                    <div>
-                                        <label className="text-[10px] font-black text-slate-400 block mb-1">外幣剩餘金額</label>
-                                        <input type="number" className="w-full bg-slate-50 p-4 rounded-xl font-black text-amber-600 outline-none border-2 border-transparent focus:border-amber-100" 
-                                            value={tempCredit.foreign} 
-                                            onChange={(e) => setTempCredit({...tempCredit, foreign: e.target.value})} 
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-black text-slate-400 block mb-1">台幣剩餘金額 (NTD)</label>
-                                        <input type="number" className="w-full bg-slate-50 p-4 rounded-xl font-black text-slate-700 outline-none border-2 border-transparent focus:border-slate-200" 
-                                            value={tempCredit.ntd} 
-                                            onChange={(e) => setTempCredit({...tempCredit, ntd: e.target.value})} 
-                                        />
-                                    </div>
-                                    <button onClick={() => { setCredit({...tempCredit}); setShowCreditModal(false); }} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black shadow-lg active-scale">儲存並更新</button>
+                                    <input type="number" placeholder="外幣金額" className="w-full bg-slate-50 p-4 rounded-xl font-black text-amber-600 outline-none" value={tempCredit.foreign} onChange={e => setTempCredit({...tempCredit, foreign: e.target.value})} />
+                                    <input type="number" placeholder="台幣金額" className="w-full bg-slate-50 p-4 rounded-xl font-black text-slate-700 outline-none" value={tempCredit.ntd} onChange={e => setTempCredit({...tempCredit, ntd: e.target.value})} />
+                                    <button onClick={() => { setCredit({...tempCredit}); setShowCreditModal(false); }} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black shadow-lg active-scale">更新基金資料</button>
+                                    <button onClick={() => setShowCreditModal(false)} className="w-full text-slate-400 text-sm font-bold">取消</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* 新增項目視窗 */}
+                    {/* 項目編輯視窗 */}
                     {showModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
                             <div className="bg-white w-full max-w-md rounded-[32px] p-6 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar text-left">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-xl font-black text-sky-900 italic">{isEditing ? '編輯' : '新增'}項目</h2>
-                                    <button onClick={() => setShowModal(false)} className="text-slate-300 text-2xl">&times;</button>
-                                </div>
+                                <h2 className="text-xl font-black text-sky-900 mb-4 italic">{isEditing ? '編輯項目' : '新增項目'}</h2>
                                 <div className="space-y-4">
-                                    {viewMode === 'purchase' && (
-                                        <div className="bg-slate-50 p-3 rounded-2xl">
-                                            <p className="text-[10px] font-black text-slate-400 mb-2 uppercase">分類管理</p>
-                                            <div className="flex flex-wrap gap-2 mb-2">
-                                                {pCats.map(c => (
-                                                    <div key={c} onClick={() => setForm({...form, cat: c})} className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer ${form.cat === c ? 'bg-sky-500 text-white' : 'bg-white text-slate-400'}`}>
-                                                        <span>{c}</span>
-                                                        {c !== '預設' && <button onClick={(e) => { e.stopPropagation(); setPCats(pCats.filter(x => x !== c)); }}><Icon name="x" className="w-2 h-2" /></button>}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <input placeholder="輸入新分類名稱" className="w-full bg-white p-3 rounded-xl text-sm font-bold outline-none border border-slate-100" value={form.cat} onChange={e => setForm({...form, cat: e.target.value})} />
+                                    <div className="bg-slate-50 p-3 rounded-2xl">
+                                        <p className="text-[10px] font-black text-slate-400 mb-2">分類選擇 (點擊切換 / 叉叉刪除)</p>
+                                        <div className="flex flex-wrap gap-2 mb-2">
+                                            {pCats.map(c => (
+                                                <div key={c} onClick={() => setForm({...form, cat: c})} className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${form.cat === c ? 'bg-sky-500 text-white' : 'bg-white text-slate-400'}`}>
+                                                    <span>{c}</span>
+                                                    {c !== '預設' && <button onClick={(e) => { e.stopPropagation(); setPCats(prev => prev.filter(x => x !== c)); if(form.cat === c) setForm({...form, cat:'預設'}); }} className="hover:text-red-500"><Icon name="x" className="w-2 h-2" /></button>}
+                                                </div>
+                                            ))}
                                         </div>
-                                    )}
+                                        <input placeholder="+ 輸入新分類" className="w-full bg-white p-3 rounded-xl text-sm font-bold outline-none border border-slate-100" value={form.cat} onChange={e => setForm({...form, cat: e.target.value})} />
+                                    </div>
                                     <div className="grid grid-cols-2 gap-2">
-                                        <input placeholder="客戶" className="bg-slate-50 p-4 rounded-xl font-bold text-sm outline-none" value={form.customer} onChange={e => setForm({...form, customer: e.target.value})} />
+                                        <input placeholder="客戶名稱" className="bg-slate-50 p-4 rounded-xl font-bold text-sm outline-none" value={form.customer} onChange={e => setForm({...form, customer: e.target.value})} />
                                         <div className="flex gap-1 bg-slate-50 p-1 rounded-xl">
                                             {['琳', '璇', '無'].map(p => <button key={p} onClick={() => setForm({...form, payer: p})} className={`flex-1 rounded-lg text-[10px] font-black ${form.payer === p ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-400'}`}>{p}</button>)}
                                         </div>
@@ -194,15 +210,11 @@
                                         </div>
                                         <div className="grid grid-cols-2 gap-2">
                                             <input type="number" placeholder="台幣成本" className="bg-white p-3 rounded-lg font-bold text-sm outline-none border border-sky-100" value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
-                                            <input type="number" placeholder="預計利潤" className="bg-white p-3 rounded-lg font-bold text-sm outline-none border border-sky-100" value={form.fee} onChange={e => setForm({...form, fee: e.target.value})} />
+                                            <input type="number" placeholder="利潤" className="bg-white p-3 rounded-lg font-bold text-sm outline-none border border-sky-100" value={form.fee} onChange={e => setForm({...form, fee: e.target.value})} />
                                         </div>
                                     </div>
-                                    <button onClick={() => {
-                                        if (viewMode === 'purchase' && !pCats.includes(form.cat)) setPCats([...pCats, form.cat]);
-                                        if (isEditing) setItems(items.map(i => i.id === isEditing ? {...form, id: isEditing} : i));
-                                        else setItems([{...form, id: Date.now(), stage: viewMode}, ...items]);
-                                        setShowModal(false);
-                                    }} className="w-full bg-sky-600 text-white py-4 rounded-2xl font-black shadow-lg active-scale">儲存項目</button>
+                                    <button onClick={handleSaveItem} className="w-full bg-sky-600 text-white py-4 rounded-2xl font-black shadow-lg active-scale">儲存項目</button>
+                                    <button onClick={() => setShowModal(false)} className="w-full text-slate-400 text-sm font-bold">取消</button>
                                 </div>
                             </div>
                         </div>
