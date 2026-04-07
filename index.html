@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 v20.0</title>
+    <title>LinTin 系統 v21.0</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com-react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -35,13 +35,13 @@
 
         const App = () => {
             const [items, setItems] = useState(() => JSON.parse(localStorage.getItem('lt_items')) || []);
-            const [pCats, setPCats] = useState(() => JSON.parse(localStorage.getItem('lt_p_cats')) || ['預設', '服飾', '鞋包']);
+            const [pCats, setPCats] = useState(() => JSON.parse(localStorage.getItem('lt_p_cats')) || ['預設', '服飾']);
             const [credit, setCredit] = useState(() => JSON.parse(localStorage.getItem('lt_credit')) || { ntd: 0, foreign: 0, cur: 'KRW' });
             
             const [rates] = useState({ KRW: 0.024, JPY: 0.21, THB: 0.9, HKD: 4.1, AUD: 21.2, NTD: 1 });
             const orderStatuses = ['全部', '待付款', '已匯款', '待查帳', '已出貨', '完成'];
             
-            const [viewMode, setViewMode] = useState('purchase'); // 'purchase' or 'order'
+            const [viewMode, setViewMode] = useState('purchase'); 
             const [activePCat, setActivePCat] = useState('全部');
             const [activeStatus, setActiveStatus] = useState('全部');
             
@@ -61,7 +61,6 @@
                 pending: items.filter(i => i.stage === 'order' && i.orderStatus !== '完成').reduce((s, i) => s + Number(i.price || 0), 0)
             }), [items]);
 
-            // 過濾邏輯：採購看分類，訂單看狀態
             const filteredItems = items.filter(i => {
                 if (i.stage !== viewMode) return false;
                 if (viewMode === 'purchase') {
@@ -89,16 +88,16 @@
 
                         <div className="grid grid-cols-3 gap-2 mb-4">
                             <div onClick={() => { setTempCredit({...credit}); setShowCreditModal(true); }} className="bg-slate-50 p-3 rounded-2xl border border-slate-100 cursor-pointer active-scale text-left">
-                                <p className="text-[8px] font-black text-slate-400 uppercase">基金庫存</p>
-                                <p className="text-[10px] font-bold text-amber-600 truncate">{credit.foreign} {credit.cur}</p>
-                                <p className="text-[10px] font-bold text-slate-700 truncate">${Number(credit.ntd).toLocaleString()}</p>
+                                <p className="text-[8px] font-black text-slate-400 uppercase leading-none mb-1">基金庫存</p>
+                                <p className="text-[10px] font-bold text-amber-600 truncate leading-none mb-1">{credit.foreign} {credit.cur}</p>
+                                <p className="text-[10px] font-bold text-slate-700 truncate leading-none">${Number(credit.ntd).toLocaleString()}</p>
                             </div>
                             <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100 text-left">
-                                <p className="text-[8px] font-black text-amber-600/70 uppercase">待收訂單</p>
+                                <p className="text-[8px] font-black text-amber-600/70 uppercase leading-none mb-1">待收訂單</p>
                                 <p className="text-xs font-bold text-amber-700 mt-1">${stats.pending.toLocaleString()}</p>
                             </div>
                             <div className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100 text-left">
-                                <p className="text-[8px] font-black text-emerald-600/70 uppercase">累計利潤</p>
+                                <p className="text-[8px] font-black text-emerald-600/70 uppercase leading-none mb-1">累計利潤</p>
                                 <p className="text-xs font-bold text-emerald-700 mt-1">${stats.profit.toLocaleString()}</p>
                             </div>
                         </div>
@@ -108,7 +107,6 @@
                             <button onClick={() => setViewMode('order')} className={`flex-1 pb-2 text-xs font-black transition-all ${viewMode === 'order' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400'}`}>訂單管理</button>
                         </div>
 
-                        {/* 動態標籤欄 */}
                         <div className="flex gap-2 overflow-x-auto no-scrollbar py-1 text-left">
                             {viewMode === 'purchase' ? (
                                 <>
@@ -117,7 +115,7 @@
                                 </>
                             ) : (
                                 orderStatuses.map(s => (
-                                    <button key={s} onClick={() => setActiveStatus(s)} className={`px-3 py-1.5 rounded-full text-[10px] font-bold whitespace-nowrap ${activeStatus === s ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-400'}`}>{s}</button>
+                                    <button key={s} onClick={() => setActiveStatus(s)} className={`px-3 py-1.5 rounded-full text-[10px] font-bold whitespace-nowrap ${activeStatus === s ? 'bg-indigo-500 text-white shadow-sm' : 'bg-slate-100 text-slate-400'}`}>{s}</button>
                                 ))
                             )}
                         </div>
@@ -150,7 +148,7 @@
                         ))}
                     </div>
 
-                    {/* 基金庫存 Modal */}
+                    {/* 基金 Modal */}
                     {showCreditModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 text-left">
                             <div className="bg-white w-full max-w-sm rounded-[32px] p-6 shadow-2xl">
@@ -161,10 +159,10 @@
                                             <button key={c} onClick={() => setTempCredit({...tempCredit, cur: c})} className={`flex-1 min-w-[50px] py-2 rounded-lg text-[10px] font-black ${tempCredit.cur === c ? 'bg-amber-500 text-white shadow-md' : 'bg-slate-50 text-slate-400'}`}>{c}</button>
                                         ))}
                                     </div>
-                                    <input type="number" placeholder="外幣金額" className="w-full bg-slate-50 p-4 rounded-xl font-black text-amber-600 outline-none border-2 border-transparent focus:border-amber-100" value={tempCredit.foreign} onChange={e => setTempCredit({...tempCredit, foreign: e.target.value})} />
-                                    <input type="number" placeholder="台幣金額" className="w-full bg-slate-50 p-4 rounded-xl font-black text-slate-700 outline-none border-2 border-transparent focus:border-slate-200" value={tempCredit.ntd} onChange={e => setTempCredit({...tempCredit, ntd: e.target.value})} />
+                                    <input type="number" placeholder="外幣金額" className="w-full bg-slate-50 p-4 rounded-xl font-black text-amber-600 outline-none" value={tempCredit.foreign} onChange={e => setTempCredit({...tempCredit, foreign: e.target.value})} />
+                                    <input type="number" placeholder="台幣金額" className="w-full bg-slate-50 p-4 rounded-xl font-black text-slate-700 outline-none" value={tempCredit.ntd} onChange={e => setTempCredit({...tempCredit, ntd: e.target.value})} />
                                     <button onClick={() => { setCredit({...tempCredit}); setShowCreditModal(false); }} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black active-scale shadow-lg">更新基金資料</button>
-                                    <button onClick={() => setShowCreditModal(false)} className="w-full text-slate-400 text-sm font-bold mt-2">取消</button>
+                                    <button onClick={() => setShowCreditModal(false)} className="w-full text-slate-400 text-sm font-bold mt-2 text-center">取消</button>
                                 </div>
                             </div>
                         </div>
@@ -213,7 +211,7 @@
                                         else setItems([{...form, id: Date.now(), stage: viewMode}, ...items]);
                                         setShowModal(false);
                                     }} className="w-full bg-sky-600 text-white py-4 rounded-2xl font-black shadow-lg active-scale">儲存項目</button>
-                                    <button onClick={() => setShowModal(false)} className="w-full text-slate-400 text-sm font-bold">取消</button>
+                                    <button onClick={() => setShowModal(false)} className="w-full text-slate-400 text-sm font-bold text-center">取消</button>
                                 </div>
                             </div>
                         </div>
