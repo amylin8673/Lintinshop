@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 v38.0</title>
+    <title>LinTin 系統 v40.0</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -36,21 +36,29 @@
 
         const App = () => {
             const [items, setItems] = useState(() => JSON.parse(localStorage.getItem('lt_items')) || []);
-            const [rates] = useState({ KRW: 0.024, JPY: 0.20, THB: 0.88, HKD: 4.05, AUD: 20.8, NTD: 1 });
-            const orderStatuses = ['全部', '待付款', '已匯款', '待查帳', '已出貨', '完成'];
+            const [credit, setCredit] = useState(() => JSON.parse(localStorage.getItem('lt_credit')) || { ntd: 0, foreign: 0, cur: 'KRW' });
             
             const [viewMode, setViewMode] = useState('purchase'); 
+            const [activePCat, setActivePCat] = useState('全部');
             const [activeStatus, setActiveStatus] = useState('全部');
             const [showModal, setShowModal] = useState(false);
             const [isEditing, setIsEditing] = useState(null);
-
-            // 銀行末五碼彈窗狀態
             const [showBankModal, setShowBankModal] = useState(false);
             const [bankForm, setBankForm] = useState({ customer: '', lastFive: '' });
 
             const [form, setForm] = useState({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款', lastFive: '' });
 
             useEffect(() => { localStorage.setItem('lt_items', JSON.stringify(items)); }, [items]);
+            useEffect(() => { localStorage.setItem('lt_credit', JSON.stringify(credit)); }, [credit]);
+
+            // 自動計算統計數據
+            const stats = useMemo(() => {
+                const profit = items.reduce((sum, i) => sum + Number(i.fee || 0), 0);
+                const pending = items
+                    .filter(i => i.stage === 'order' && i.orderStatus !== '完成')
+                    .reduce((sum, i) => sum + Number(i.price || 0), 0);
+                return { profit, pending };
+            }, [items]);
 
             const changeStatus = (customerName, newStatus) => {
                 if (newStatus === '已匯款') {
@@ -69,6 +77,10 @@
                 ));
                 setShowBankModal(false);
             };
+
+            const purchaseItems = useMemo(() => {
+                return items.filter(i => i.stage === 'purchase' && (activePCat === '全部' || i.cat === activePCat));
+            }, [items, activePCat]);
 
             const groupedOrders = useMemo(() => {
                 const allOrders = items.filter(i => i.stage === 'order');
@@ -92,8 +104,25 @@
                 <div className="min-h-screen pb-10 text-slate-900">
                     <header className="bg-white sticky top-0 z-40 border-b border-slate-100 p-5 text-left">
                         <div className="flex justify-between items-center mb-5">
-                            <h1 className="text-xl font-black italic text-sky-600">LinTin</h1>
-                            <button onClick={() => { setForm({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款', lastFive: '' }); setIsEditing(null); setShowModal(true); }} className="bg-sky-500 text-white px-5 py-2 rounded-full font-black text-sm active-scale shadow-lg">+ 新增項目</button>
+                            <h1 className="text-xl font-black italic text-sky-600 tracking-tighter">LinTin</h1>
+                            <button onClick={() => { setForm({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款', lastFive: '' }); setIsEditing(null); setShowModal(true); }} className="bg-sky-500 text-white px-5 py-2.5 rounded-full font-black text-sm active-scale shadow-lg">+ 新增項目</button>
+                        </div>
+
+                        {/* 頂部數據卡片 */}
+                        <div className="grid grid-cols-3 gap-2 mb-5">
+                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-left relative overflow-hidden">
+                                <p className="text-[10px] font-bold text-slate-400 mb-1">共同基金</p>
+                                <p className="text-[11px] font-black text-amber-500 truncate mb-1">{credit.foreign} {credit.cur}</p>
+                                <p className="text-[11px] font-black text-slate-800 leading-none">${Number(credit.ntd).toLocaleString()}</p>
+                            </div>
+                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-left">
+                                <p className="text-[10px] font-bold text-slate-400 mb-1">待收金額</p>
+                                <p className="text-xs font-black text-sky-600 mt-1">${stats.pending.toLocaleString()}</p>
+                            </div>
+                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-left">
+                                <p className="text-[10px] font-bold text-slate-400 mb-1">預期利潤</p>
+                                <p className="text-xs font-black text-emerald-500 mt-1">${stats.profit.toLocaleString()}</p>
+                            </div>
                         </div>
 
                         <div className="flex gap-6 border-b border-slate-50 mb-3 px-1 text-sm font-black">
@@ -101,18 +130,45 @@
                             <button onClick={() => setViewMode('order')} className={`pb-2 transition-colors ${viewMode === 'order' ? 'text-sky-700 border-b-2 border-sky-700' : 'text-slate-300'}`}>訂單管理</button>
                         </div>
 
-                        {viewMode === 'order' && (
-                            <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
-                                {orderStatuses.map(s => (
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+                            {viewMode === 'purchase' ? (
+                                <>
+                                    <button onClick={() => setActivePCat('全部')} className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap ${activePCat === '全部' ? 'bg-sky-500 text-white shadow-md' : 'bg-slate-100 text-slate-500'}`}>全部</button>
+                                    {['預設', '韓國東大門'].map(c => <button key={c} onClick={() => setActivePCat(c)} className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap ${activePCat === c ? 'bg-sky-500 text-white shadow-md' : 'bg-slate-100 text-slate-500'}`}>{c}</button>)}
+                                </>
+                            ) : (
+                                ['全部', '待付款', '已匯款', '待查帳', '已出貨', '完成'].map(s => (
                                     <button key={s} onClick={() => setActiveStatus(s)} className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap transition-all ${activeStatus === s ? 'bg-sky-700 text-white shadow-md' : 'bg-slate-100 text-slate-500'}`}>{s}</button>
-                                ))}
-                            </div>
-                        )}
+                                ))
+                            )}
+                        </div>
                     </header>
 
                     <div className="p-4 space-y-6">
+                        {/* 採購清單模式 */}
+                        {viewMode === 'purchase' && purchaseItems.map(item => (
+                            <div key={item.id} className="bg-white rounded-[28px] p-6 shadow-sm border border-slate-200 relative text-left">
+                                <div className={`absolute top-5 right-5 px-3 py-1.5 rounded-full text-[10px] font-black text-white ${item.payer === '璇' ? 'bg-sky-300' : item.payer === '琳' ? 'bg-cyan-300' : 'bg-slate-200'}`}>{item.payer}</div>
+                                <div className="space-y-4">
+                                    <div><p className="field-label">客戶</p><div className="field-value">{item.customer}</div></div>
+                                    <div><p className="field-label">商品</p><div className="field-value text-slate-600">{item.product}</div></div>
+                                    <div className="flex justify-between items-end pt-4 border-t border-slate-50">
+                                        <div className="flex gap-2">
+                                            <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="p-3 bg-slate-50 text-slate-400 rounded-xl active-scale"><Icon name="edit" /></button>
+                                            <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-3 bg-slate-50 text-slate-400 rounded-xl active-scale"><Icon name="trash" /></button>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xl font-black text-slate-900 leading-none mb-3">NT$ {Number(item.price).toLocaleString()}</p>
+                                            <button onClick={() => setItems(items.map(i => i.id === item.id ? {...i, stage:'order', orderStatus:'待付款'} : i))} className="bg-sky-500 text-white text-[11px] font-black px-6 py-2.5 rounded-xl active-scale shadow-lg">完成採購</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* 訂單管理模式 */}
                         {viewMode === 'order' && Object.keys(groupedOrders).map(customer => (
-                            <div key={customer} className="bg-white rounded-[32px] overflow-hidden border border-slate-200 shadow-sm text-left">
+                            <div key={customer} className="bg-white rounded-[32px] overflow-hidden border border-slate-200 shadow-sm mb-4 text-left">
                                 <div className="bg-sky-50/50 px-6 py-5 flex justify-between items-center border-b border-sky-100/50">
                                     <div className="flex items-center gap-2">
                                         <div className="bg-sky-600 p-1.5 rounded-lg text-white shadow-sm"><Icon name="user" className="w-3.5 h-3.5" /></div>
@@ -131,17 +187,17 @@
                                             value={groupedOrders[customer].status} 
                                             onChange={e => changeStatus(customer, e.target.value)}
                                         >
-                                            {orderStatuses.filter(s => s !== '全部').map(s => <option key={s} value={s}>{s}</option>)}
+                                            {['待付款', '已匯款', '待查帳', '已出貨', '完成'].map(s => <option key={s} value={s}>{s}</option>)}
                                         </select>
                                         <p className="text-sm font-black text-sky-700">NT$ {groupedOrders[customer].total.toLocaleString()}</p>
                                     </div>
                                 </div>
                                 <div className="p-4 space-y-3">
                                     {groupedOrders[customer].items.map(item => (
-                                        <div key={item.id} className="bg-slate-50/40 p-4 rounded-2xl flex justify-between items-center border border-slate-100">
+                                        <div key={item.id} className="bg-slate-50/40 p-4 rounded-2xl flex justify-between items-center">
                                             <div className="flex-1">
                                                 <p className="text-xs font-black text-slate-700">{item.product}</p>
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase">NT$ {Number(item.price).toLocaleString()}</p>
+                                                <p className="text-[10px] font-bold text-slate-400">NT$ {Number(item.price).toLocaleString()}</p>
                                             </div>
                                             <div className="flex gap-4 ml-4">
                                                 <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="text-slate-300"><Icon name="edit" className="w-3.5 h-3.5" /></button>
@@ -154,41 +210,33 @@
                         ))}
                     </div>
 
-                    {/* 銀行末五碼輸入彈窗 */}
+                    {/* 銀行末五碼彈窗 */}
                     {showBankModal && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-6 text-left">
-                            <div className="bg-white w-full max-w-xs rounded-[40px] p-8 shadow-2xl animate-in zoom-in duration-200">
-                                <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mb-4 mx-auto">
-                                    <Icon name="bank" className="w-6 h-6" />
-                                </div>
+                            <div className="bg-white w-full max-w-xs rounded-[40px] p-8 shadow-2xl">
                                 <h2 className="text-lg font-black text-slate-800 text-center mb-1">匯款對帳確認</h2>
-                                <p className="text-xs text-slate-400 text-center mb-6">請輸入 {bankForm.customer} 的匯款末五碼</p>
-                                
+                                <p className="text-xs text-slate-400 text-center mb-6">{bankForm.customer} 的訂單</p>
                                 <input 
-                                    autoFocus
-                                    type="tel"
-                                    maxLength="5"
-                                    placeholder="00000"
-                                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-center text-2xl font-black tracking-widest outline-none focus:border-amber-400 transition-colors mb-6"
+                                    autoFocus type="tel" maxLength="5" placeholder="末五碼"
+                                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-center text-2xl font-black outline-none focus:border-amber-400 mb-6"
                                     value={bankForm.lastFive}
                                     onChange={e => setBankForm({...bankForm, lastFive: e.target.value})}
                                 />
-
                                 <div className="flex gap-3">
                                     <button onClick={() => setShowBankModal(false)} className="flex-1 py-4 text-sm font-black text-slate-400 bg-slate-100 rounded-2xl active-scale">取消</button>
-                                    <button onClick={() => executeStatusUpdate(bankForm.customer, '已匯款', bankForm.lastFive)} className="flex-[2] py-4 text-sm font-black text-white bg-amber-500 rounded-2xl shadow-lg shadow-amber-100 active-scale">確認已匯款</button>
+                                    <button onClick={() => executeStatusUpdate(bankForm.customer, '已匯款', bankForm.lastFive)} className="flex-[2] py-4 text-sm font-black text-white bg-amber-500 rounded-2xl shadow-lg active-scale">確認</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* 主編輯 Modal (省略部分維持原樣) */}
+                    {/* 編輯/新增 Modal */}
                     {showModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 text-left">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
-                                <h2 className="text-2xl font-black text-slate-800 mb-6 italic">Edit Item</h2>
+                                <h2 className="text-2xl font-black text-slate-800 mb-6 italic">{isEditing ? 'Edit Item' : 'New Item'}</h2>
                                 <div className="space-y-5">
-                                    <div><p className="field-label">分類 Tag</p><input className="field-value outline-none focus:border-sky-300" value={form.cat} onChange={e => setForm({...form, cat: e.target.value})} /></div>
+                                    <div><p className="field-label">分類 Tag</p><input className="field-value outline-none" value={form.cat} onChange={e => setForm({...form, cat: e.target.value})} /></div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div><p className="field-label">客戶 Client</p><input className="field-value outline-none" value={form.customer} onChange={e => setForm({...form, customer: e.target.value})} /></div>
                                         <div>
@@ -206,9 +254,19 @@
                                         </div>
                                         <input type="number" placeholder="預期利潤" className="field-value border-none text-emerald-600 font-black" value={form.fee} onChange={e => setForm({...form, fee: e.target.value})} />
                                     </div>
+                                    
+                                    {/* 共同基金編輯 (僅在編輯模式下或新增時可順便調整) */}
+                                    <div className="pt-4 border-t border-slate-100">
+                                        <p className="field-label">更新共同基金 (餘額)</p>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <input type="number" placeholder="台幣餘額" className="field-value" value={credit.ntd} onChange={e => setCredit({...credit, ntd: e.target.value})} />
+                                            <input type="number" placeholder="外幣餘額" className="field-value" value={credit.foreign} onChange={e => setCredit({...credit, foreign: e.target.value})} />
+                                        </div>
+                                    </div>
+
                                     <div className="flex gap-4 pt-4">
                                         <button onClick={() => setShowModal(false)} className="flex-1 bg-slate-100 text-slate-400 py-4 rounded-[20px] font-black active-scale">取消</button>
-                                        <button onClick={() => { if (isEditing) setItems(items.map(i => i.id === isEditing ? {...form, id: isEditing} : i)); else setItems([{...form, id: Date.now(), stage: viewMode}, ...items]); setShowModal(false); }} className="flex-[2] bg-sky-500 text-white py-4 rounded-[20px] font-black shadow-xl active-scale">儲存項目</button>
+                                        <button onClick={() => { if (isEditing) setItems(items.map(i => i.id === isEditing ? {...form, id: isEditing} : i)); else setItems([{...form, id: Date.now(), stage: viewMode}, ...items]); setShowModal(false); }} className="flex-[2] bg-sky-500 text-white py-4 rounded-[20px] font-black shadow-xl active-scale">儲存</button>
                                     </div>
                                 </div>
                             </div>
