@@ -3,18 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 v33.0</title>
+    <title>LinTin 系統 v34.0</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #F8FAFC; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #FBFBFA; -webkit-tap-highlight-color: transparent; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .active-scale:active { transform: scale(0.96); }
-        .field-label { font-size: 10px; font-weight: 900; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; margin-left: 4px; text-align: left; }
-        .field-value { background-color: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 700; color: #1E293B; width: 100%; text-align: left; }
+        .field-label { font-size: 10px; font-weight: 900; color: #A8A29E; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; margin-left: 4px; text-align: left; }
+        .field-value { background-color: #F5F5F4; border: 1px solid #E7E5E4; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 700; color: #44403C; width: 100%; text-align: left; }
+        
+        /* 霧霾藍與鼠尾草綠的自定義顏色 */
+        .bg-dusty-blue { background-color: #78909C; }
+        .text-dusty-blue { color: #546E7A; }
+        .border-dusty-blue { border-color: #CFD8DC; }
+        
+        .bg-sage-green { background-color: #8D9984; }
+        .text-sage-green { color: #6B7563; }
+        .border-sage-green { border-color: #D6DBD2; }
     </style>
 </head>
 <body>
@@ -89,96 +98,98 @@
             }), [items]);
 
             return (
-                <div className="min-h-screen pb-10 text-slate-900">
-                    <header className="bg-white sticky top-0 z-40 border-b border-slate-100 p-5 text-left">
+                <div className="min-h-screen pb-10 text-stone-800">
+                    <header className="bg-white sticky top-0 z-40 border-b border-stone-100 p-5 text-left">
                         <div className="flex justify-between items-center mb-5">
                             <div className="flex items-center gap-2">
-                                <div className="bg-slate-900 p-2 rounded-xl text-white shadow-lg"><Icon name="box" className="w-5 h-5" /></div>
-                                <h1 className="text-xl font-black italic tracking-tighter">LinTin</h1>
+                                <div className="bg-stone-800 p-2 rounded-xl text-stone-50 shadow-md"><Icon name="box" className="w-5 h-5" /></div>
+                                <h1 className="text-xl font-black italic tracking-tighter text-stone-800">LinTin</h1>
                             </div>
-                            <button onClick={() => { setForm({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款' }); setIsEditing(null); setShowModal(true); }} className="bg-sky-600 text-white px-5 py-2.5 rounded-full font-black text-sm active-scale shadow-lg">+ 新增項目</button>
+                            <button onClick={() => { setForm({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款' }); setIsEditing(null); setShowModal(true); }} className="bg-dusty-blue text-white px-5 py-2.5 rounded-full font-black text-sm active-scale shadow-lg">+ 新增項目</button>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 mb-5 text-left">
-                            <div onClick={() => { fetchLatestRates(); setTempCredit({...credit}); setShowCreditModal(true); }} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm active-scale relative overflow-hidden">
-                                {isUpdatingRates && <div className="absolute inset-0 bg-white/60 flex items-center justify-center"><Icon name="sync" className="w-4 h-4 text-sky-600 animate-spin" /></div>}
-                                <p className="text-[10px] font-bold text-slate-400 mb-1 uppercase">庫存</p>
-                                <p className="text-[11px] font-black text-amber-500 truncate leading-none mb-1">{credit.foreign} {credit.cur}</p>
-                                <p className="text-[11px] font-black text-slate-800 leading-none">${Number(credit.ntd).toLocaleString()}</p>
+                        <div className="grid grid-cols-3 gap-2 mb-5">
+                            <div onClick={() => { fetchLatestRates(); setTempCredit({...credit}); setShowCreditModal(true); }} className="bg-stone-50 p-3 rounded-2xl border border-stone-200/60 shadow-sm active-scale relative overflow-hidden">
+                                {isUpdatingRates && <div className="absolute inset-0 bg-white/60 flex items-center justify-center"><Icon name="sync" className="w-4 h-4 text-dusty-blue animate-spin" /></div>}
+                                <p className="text-[10px] font-bold text-stone-400 mb-1">庫存</p>
+                                <p className="text-[11px] font-black text-amber-600 truncate leading-none mb-1">{credit.foreign} {credit.cur}</p>
+                                <p className="text-[11px] font-black text-stone-800 leading-none">${Number(credit.ntd).toLocaleString()}</p>
                             </div>
-                            <div className="bg-amber-50/50 p-3 rounded-2xl border border-amber-100/50">
-                                <p className="text-[10px] font-bold text-amber-600 mb-1">待收</p>
-                                <p className="text-xs font-black text-amber-700 mt-1">${stats.pending.toLocaleString()}</p>
+                            <div className="bg-stone-50 p-3 rounded-2xl border border-stone-200/60">
+                                <p className="text-[10px] font-bold text-stone-400 mb-1">待收</p>
+                                <p className="text-xs font-black text-stone-800 mt-1">${stats.pending.toLocaleString()}</p>
                             </div>
-                            <div className="bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100/50">
-                                <p className="text-[10px] font-bold text-emerald-600 mb-1">利潤</p>
-                                <p className="text-xs font-black text-emerald-700 mt-1">${stats.profit.toLocaleString()}</p>
+                            <div className="bg-stone-50 p-3 rounded-2xl border border-stone-200/60">
+                                <p className="text-[10px] font-bold text-stone-400 mb-1">利潤</p>
+                                <p className="text-xs font-black text-stone-800 mt-1">${stats.profit.toLocaleString()}</p>
                             </div>
                         </div>
 
-                        <div className="flex gap-6 border-b border-slate-50 mb-3 px-1 text-sm font-black">
-                            <button onClick={() => setViewMode('purchase')} className={`pb-2 transition-colors ${viewMode === 'purchase' ? 'text-sky-600 border-b-2 border-sky-600' : 'text-slate-400'}`}>採購清單</button>
-                            <button onClick={() => setViewMode('order')} className={`pb-2 transition-colors ${viewMode === 'order' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-slate-400'}`}>訂單管理</button>
+                        <div className="flex gap-6 border-b border-stone-50 mb-3 px-1 text-sm font-black">
+                            <button onClick={() => setViewMode('purchase')} className={`pb-2 transition-colors ${viewMode === 'purchase' ? 'text-dusty-blue border-b-2 border-dusty-blue' : 'text-stone-300'}`}>採購清單</button>
+                            <button onClick={() => setViewMode('order')} className={`pb-2 transition-colors ${viewMode === 'order' ? 'text-sage-green border-b-2 border-sage-green' : 'text-stone-300'}`}>訂單管理</button>
                         </div>
 
                         <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
                             {viewMode === 'purchase' ? (
                                 <>
-                                    <button onClick={() => setActivePCat('全部')} className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap ${activePCat === '全部' ? 'bg-sky-600 text-white shadow-md' : 'bg-slate-100 text-slate-500'}`}>全部</button>
-                                    {pCats.map(c => <button key={c} onClick={() => setActivePCat(c)} className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap ${activePCat === c ? 'bg-sky-600 text-white shadow-md' : 'bg-slate-100 text-slate-500'}`}>{c}</button>)}
+                                    <button onClick={() => setActivePCat('全部')} className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap ${activePCat === '全部' ? 'bg-dusty-blue text-white shadow-md' : 'bg-stone-100 text-stone-400'}`}>全部</button>
+                                    {pCats.map(c => <button key={c} onClick={() => setActivePCat(c)} className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap ${activePCat === c ? 'bg-dusty-blue text-white shadow-md' : 'bg-stone-100 text-stone-400'}`}>{c}</button>)}
                                 </>
                             ) : (
                                 orderStatuses.map(s => (
-                                    <button key={s} onClick={() => setActiveStatus(s)} className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap transition-all ${activeStatus === s ? 'bg-teal-600 text-white shadow-md' : 'bg-slate-100 text-slate-500'}`}>{s}</button>
+                                    <button key={s} onClick={() => setActiveStatus(s)} className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap transition-all ${activeStatus === s ? 'bg-sage-green text-white shadow-md' : 'bg-stone-100 text-stone-400'}`}>{s}</button>
                                 ))
                             )}
                         </div>
                     </header>
 
                     <div className="p-4 space-y-6">
+                        {/* 採購清單 - 霧霾藍調 */}
                         {viewMode === 'purchase' && purchaseItems.map(item => (
-                            <div key={item.id} className="bg-white rounded-[28px] p-6 shadow-sm border border-slate-200 relative text-left">
-                                <div className={`absolute top-5 right-5 px-3 py-1.5 rounded-full text-[10px] font-black text-white ${item.payer === '璇' ? 'bg-sky-400' : item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-slate-300'}`}>{item.payer}</div>
+                            <div key={item.id} className="bg-white rounded-[28px] p-6 shadow-sm border border-stone-200 relative text-left">
+                                <div className={`absolute top-5 right-5 px-3 py-1.5 rounded-full text-[10px] font-black text-white ${item.payer === '璇' ? 'bg-stone-400' : item.payer === '琳' ? 'bg-stone-300' : 'bg-stone-200'}`}>{item.payer}</div>
                                 <div className="space-y-4">
-                                    <div><p className="field-label">客戶 Client</p><div className="field-value">{item.customer}</div></div>
-                                    <div><p className="field-label">商品 Product</p><div className="field-value text-slate-600">{item.product}</div></div>
-                                    <div className="flex justify-between items-end pt-4 border-t border-slate-50">
+                                    <div><p className="field-label text-stone-300">客戶</p><div className="field-value border-none bg-stone-50">{item.customer}</div></div>
+                                    <div><p className="field-label text-stone-300">商品</p><div className="field-value border-none bg-stone-50">{item.product}</div></div>
+                                    <div className="flex justify-between items-end pt-4 border-t border-stone-50">
                                         <div className="flex gap-2">
-                                            <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="p-3 bg-slate-50 text-slate-400 rounded-xl active-scale"><Icon name="edit" /></button>
-                                            <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-3 bg-slate-50 text-slate-400 rounded-xl active-scale"><Icon name="trash" /></button>
+                                            <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="p-3 bg-stone-50 text-stone-400 rounded-xl active-scale"><Icon name="edit" /></button>
+                                            <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-3 bg-stone-50 text-stone-400 rounded-xl active-scale"><Icon name="trash" /></button>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-xl font-black text-slate-900 leading-none mb-3">NT$ {Number(item.price).toLocaleString()}</p>
-                                            <button onClick={() => setItems(items.map(i => i.id === item.id ? {...i, stage:'order', orderStatus:'待付款'} : i))} className="bg-slate-900 text-white text-[11px] font-black px-6 py-2.5 rounded-xl active-scale shadow-lg">完成採購</button>
+                                            <p className="text-xl font-black text-stone-800 leading-none mb-3">NT$ {Number(item.price).toLocaleString()}</p>
+                                            <button onClick={() => setItems(items.map(i => i.id === item.id ? {...i, stage:'order', orderStatus:'待付款'} : i))} className="bg-stone-800 text-white text-[11px] font-black px-6 py-2.5 rounded-xl active-scale shadow-lg">完成採購</button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         ))}
 
+                        {/* 訂單管理 - 鼠尾草綠調 */}
                         {viewMode === 'order' && Object.keys(groupedOrders).map(customer => (
-                            <div key={customer} className="bg-white rounded-[32px] overflow-hidden border border-slate-200 shadow-sm mb-4 text-left">
-                                <div className="bg-teal-50/50 px-6 py-4 flex justify-between items-center border-b border-teal-100/30">
-                                    <div className="flex items-center gap-2">
-                                        <div className="bg-teal-600 p-1.5 rounded-lg text-white shadow-sm"><Icon name="user" className="w-3.5 h-3.5" /></div>
-                                        <span className="font-black text-teal-900 text-sm tracking-tight">{customer}</span>
+                            <div key={customer} className="bg-white rounded-[32px] overflow-hidden border border-stone-200 shadow-sm mb-4 text-left">
+                                <div className="bg-stone-50/50 px-6 py-4 flex justify-between items-center border-b border-stone-100">
+                                    <div className="flex items-center gap-2 text-sage-green">
+                                        <Icon name="user" className="w-4 h-4" />
+                                        <span className="font-black text-stone-700 text-sm">{customer}</span>
                                     </div>
-                                    <span className="text-[10px] font-black bg-white px-2.5 py-1 rounded-full text-teal-600 border border-teal-100 shadow-sm">ITEMS: {groupedOrders[customer].length}</span>
+                                    <span className="text-[10px] font-black bg-stone-100 px-3 py-1 rounded-full text-stone-400 uppercase tracking-tighter">Items: {groupedOrders[customer].length}</span>
                                 </div>
                                 <div className="p-4 space-y-4">
                                     {groupedOrders[customer].map(item => (
-                                        <div key={item.id} className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 flex justify-between items-center">
+                                        <div key={item.id} className="bg-stone-50/30 p-4 rounded-2xl border border-stone-100/50 flex justify-between items-center">
                                             <div className="flex-1">
-                                                <p className="text-xs font-black text-slate-700 mb-1">{item.product}</p>
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase">NT$ {Number(item.price).toLocaleString()} <span className="mx-1">/</span> {item.fPrice} {item.cur}</p>
+                                                <p className="text-xs font-black text-stone-700 mb-1">{item.product}</p>
+                                                <p className="text-[10px] font-bold text-stone-300 uppercase">NT$ {Number(item.price).toLocaleString()} / {item.fPrice} {item.cur}</p>
                                             </div>
                                             <div className="flex flex-col items-end gap-2">
-                                                <select className={`px-3 py-1.5 rounded-lg text-[10px] font-black outline-none text-white transition-colors ${item.orderStatus === '完成' ? 'bg-emerald-500' : 'bg-teal-600'}`} value={item.orderStatus} onChange={e => setItems(items.map(i => i.id === item.id ? {...i, orderStatus:e.target.value} : i))}>
+                                                <select className={`px-3 py-1.5 rounded-lg text-[10px] font-black outline-none text-white transition-colors ${item.orderStatus === '完成' ? 'bg-stone-400' : 'bg-sage-green'}`} value={item.orderStatus} onChange={e => setItems(items.map(i => i.id === item.id ? {...i, orderStatus:e.target.value} : i))}>
                                                     {orderStatuses.filter(s => s !== '全部').map(s => <option key={s} value={s}>{s}</option>)}
                                                 </select>
-                                                <div className="flex gap-3">
-                                                    <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="text-slate-300 active-scale"><Icon name="edit" className="w-3.5 h-3.5" /></button>
-                                                    <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="text-rose-200 active-scale"><Icon name="trash" className="w-3.5 h-3.5" /></button>
+                                                <div className="flex gap-4">
+                                                    <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="text-stone-300 active-scale"><Icon name="edit" className="w-3.5 h-3.5" /></button>
+                                                    <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="text-stone-200 active-scale"><Icon name="trash" className="w-3.5 h-3.5" /></button>
                                                 </div>
                                             </div>
                                         </div>
@@ -188,38 +199,38 @@
                         ))}
                     </div>
 
-                    {/* Modal 區塊 */}
+                    {/* Modal */}
                     {showModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-[2px] p-4 text-left">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
-                                <h2 className="text-2xl font-black text-slate-800 mb-6 italic text-left">{isEditing ? 'Edit Item' : 'New Item'}</h2>
+                                <h2 className="text-xl font-black text-stone-800 mb-6 italic">Edit Item</h2>
                                 <div className="space-y-5">
-                                    <div><p className="field-label">分類 Tag</p><input className="field-value outline-none focus:border-sky-300" value={form.cat} onChange={e => setForm({...form, cat: e.target.value})} /></div>
-                                    <div className="grid grid-cols-2 gap-4 text-left">
-                                        <div><p className="field-label">客戶 Client</p><input className="field-value outline-none" value={form.customer} onChange={e => setForm({...form, customer: e.target.value})} /></div>
+                                    <div><p className="field-label">分類 Tag</p><input className="field-value outline-none focus:border-stone-300" value={form.cat} onChange={e => setForm({...form, cat: e.target.value})} /></div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div><p className="field-label">客戶 Client</p><input className="field-value outline-none focus:border-stone-300" value={form.customer} onChange={e => setForm({...form, customer: e.target.value})} /></div>
                                         <div>
-                                            <p className="field-label">支付 Payer</p>
-                                            <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
-                                                {['琳', '璇', '無'].map(p => <button key={p} onClick={() => setForm({...form, payer: p})} className={`flex-1 py-2 rounded-lg text-[10px] font-black ${form.payer === p ? 'bg-white shadow-sm' : 'text-slate-400'}`}>{p}</button>)}
+                                            <p className="field-label text-stone-300">支付 Payer</p>
+                                            <div className="flex gap-1 bg-stone-50 p-1 rounded-xl">
+                                                {['琳', '璇', '無'].map(p => <button key={p} onClick={() => setForm({...form, payer: p})} className={`flex-1 py-2 rounded-lg text-[10px] font-black transition-all ${form.payer === p ? 'bg-white shadow-sm text-stone-800' : 'text-stone-300'}`}>{p}</button>)}
                                             </div>
                                         </div>
                                     </div>
-                                    <div><p className="field-label">商品名稱 Product</p><input className="field-value outline-none" value={form.product} onChange={e => setForm({...form, product: e.target.value})} /></div>
-                                    <div className="bg-slate-50 p-5 rounded-[28px] space-y-4">
+                                    <div><p className="field-label">商品名稱 Product</p><input className="field-value outline-none focus:border-stone-300" value={form.product} onChange={e => setForm({...form, product: e.target.value})} /></div>
+                                    <div className="bg-stone-50 p-5 rounded-[28px] space-y-4">
                                         <div className="grid grid-cols-5 gap-1">
                                             {Object.keys(rates).map(c => (
-                                                <button key={c} onClick={() => setForm({...form, cur: c})} className={`py-2 rounded-lg text-[10px] font-black border transition-all ${form.cur === c ? 'bg-amber-500 border-amber-600 text-white shadow-sm' : 'bg-white text-slate-400'}`}>{c}</button>
+                                                <button key={c} onClick={() => setForm({...form, cur: c})} className={`py-2 rounded-lg text-[10px] font-black border transition-all ${form.cur === c ? 'bg-stone-800 border-stone-800 text-white shadow-md' : 'bg-white text-stone-400 border-stone-200/60'}`}>{c}</button>
                                             ))}
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
-                                            <input type="number" placeholder="外幣單價" className="field-value border-none text-amber-600 font-black" value={form.fPrice} onChange={e => setForm({...form, fPrice: e.target.value})} />
-                                            <input type="number" placeholder="台幣售價" className="field-value border-none text-sky-600 font-black" value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
+                                            <input type="number" placeholder="外幣單價" className="field-value border-none text-amber-700 font-black" value={form.fPrice} onChange={e => setForm({...form, fPrice: e.target.value})} />
+                                            <input type="number" placeholder="台幣售價" className="field-value border-none text-stone-800 font-black" value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
                                         </div>
-                                        <input type="number" placeholder="預期利潤" className="field-value border-none text-emerald-600 font-black" value={form.fee} onChange={e => setForm({...form, fee: e.target.value})} />
+                                        <input type="number" placeholder="預期利潤" className="field-value border-none text-stone-500 font-black" value={form.fee} onChange={e => setForm({...form, fee: e.target.value})} />
                                     </div>
                                     <div className="flex gap-4 pt-4">
-                                        <button onClick={() => setShowModal(false)} className="flex-1 bg-slate-100 text-slate-400 py-4 rounded-[20px] font-black active-scale">取消</button>
-                                        <button onClick={() => { if (isEditing) setItems(items.map(i => i.id === isEditing ? {...form, id: isEditing} : i)); else setItems([{...form, id: Date.now(), stage: viewMode}, ...items]); setShowModal(false); }} className="flex-[2] bg-slate-900 text-white py-4 rounded-[20px] font-black shadow-xl active-scale">儲存</button>
+                                        <button onClick={() => setShowModal(false)} className="flex-1 bg-stone-100 text-stone-400 py-4 rounded-[20px] font-black active-scale">取消</button>
+                                        <button onClick={() => { if (isEditing) setItems(items.map(i => i.id === isEditing ? {...form, id: isEditing} : i)); else setItems([{...form, id: Date.now(), stage: viewMode}, ...items]); setShowModal(false); }} className="flex-[2] bg-stone-800 text-white py-4 rounded-[20px] font-black shadow-xl active-scale">儲存變更</button>
                                     </div>
                                 </div>
                             </div>
