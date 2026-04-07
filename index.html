@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 v37.2</title>
+    <title>LinTin 系統 v37.3</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -15,6 +15,8 @@
         .active-scale:active { transform: scale(0.96); }
         .field-label { font-size: 10px; font-weight: 900; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; margin-left: 4px; text-align: left; }
         .field-value { background-color: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 700; color: #1E293B; width: 100%; text-align: left; }
+        /* 隱藏輸入框邊框使其看起來像文字 */
+        .stat-input { background: transparent; border: none; padding: 0; font-weight: 900; outline: none; width: 100%; text-align: left; }
     </style>
 </head>
 <body>
@@ -26,21 +28,19 @@
         const Icon = ({ name, className = "w-4 h-4" }) => {
             const icons = {
                 box: <path d="M21 8l-2-2H5L3 8v11a2 2 0 002 2h14a2 2 0 002-2V8zM5 8l1.5-1.5h11L19 8H5zm14 11H5V10h14v9zM9 12h6v2H9v-2z" />,
-                sync: <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" />,
                 edit: <path d="M14.06 3.02l.92.92L5.92 13H5v-.92l9.06-9.06M17.66 1c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 15.25V21h5.75L19.81 9.94l-3.75-3.75z" />,
                 trash: <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z" />,
-                user: <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />,
-                wallet: <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
+                user: <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
             };
             return <svg className={className} viewBox="0 0 24 24" fill="currentColor">{icons[name]}</svg>;
         };
 
         const App = () => {
             const [items, setItems] = useState(() => JSON.parse(localStorage.getItem('lt_items')) || []);
-            const [pCats, setPCats] = useState(() => JSON.parse(localStorage.getItem('lt_p_cats')) || ['預設', '韓國東大門']);
+            const [pCats] = useState(['預設', '韓國東大門']);
             const [credit, setCredit] = useState(() => JSON.parse(localStorage.getItem('lt_credit')) || { ntd: 0, foreign: 0, cur: 'KRW' });
-            const [rates, setRates] = useState({ KRW: 0.024, JPY: 0.20, THB: 0.88, HKD: 4.05, AUD: 20.8, NTD: 1 });
-            
+            const [rates] = useState({ KRW: 0.024, JPY: 0.20, THB: 0.88, HKD: 4.05, AUD: 20.8, NTD: 1 });
+
             const orderStatuses = ['全部', '待付款', '已匯款', '待查帳', '已出貨', '完成'];
             const [viewMode, setViewMode] = useState('purchase'); 
             const [activePCat, setActivePCat] = useState('全部');
@@ -48,7 +48,7 @@
             const [showModal, setShowModal] = useState(false);
             const [isEditing, setIsEditing] = useState(null);
 
-            // 功能：末五碼彈窗狀態
+            // 功能：末五碼狀態
             const [showBankModal, setShowBankModal] = useState(false);
             const [bankData, setBankData] = useState({ customer: '', lastFive: '' });
 
@@ -57,7 +57,6 @@
             useEffect(() => { localStorage.setItem('lt_items', JSON.stringify(items)); }, [items]);
             useEffect(() => { localStorage.setItem('lt_credit', JSON.stringify(credit)); }, [credit]);
 
-            // 修改：狀態切換邏輯 (攔截已匯款)
             const handleStatusChange = (customerName, newStatus) => {
                 if (newStatus === '已匯款') {
                     setBankData({ customer: customerName, lastFive: '' });
@@ -87,11 +86,11 @@
                     groups[item.customer].total += Number(item.price || 0);
                 });
                 if (activeStatus === '全部') return groups;
-                const filteredGroups = {};
+                const filtered = {};
                 Object.keys(groups).forEach(name => {
-                    if (groups[name].status === activeStatus) filteredGroups[name] = groups[name];
+                    if (groups[name].status === activeStatus) filtered[name] = groups[name];
                 });
-                return filteredGroups;
+                return filtered;
             }, [items, activeStatus]);
 
             const purchaseItems = useMemo(() => {
@@ -114,11 +113,16 @@
                             <button onClick={() => { setForm({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款', lastFive: '' }); setIsEditing(null); setShowModal(true); }} className="bg-sky-500 text-white px-5 py-2.5 rounded-full font-black text-sm active-scale shadow-lg">+ 新增項目</button>
                         </div>
 
+                        {/* 修改：點擊數據卡片即可編輯 */}
                         <div className="grid grid-cols-3 gap-2 mb-5">
                             <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-left">
                                 <p className="text-[10px] font-bold text-slate-400 mb-1">庫存餘額</p>
-                                <p className="text-[11px] font-black text-amber-500 truncate mb-1">{credit.foreign} {credit.cur}</p>
-                                <p className="text-[11px] font-black text-slate-800 leading-none">${Number(credit.ntd).toLocaleString()}</p>
+                                <div className="flex flex-col">
+                                    <input type="number" className="stat-input text-[11px] text-amber-500" value={credit.foreign} onChange={e => setCredit({...credit, foreign: e.target.value})} />
+                                    <div className="flex items-center text-[11px] font-black text-slate-800">
+                                        $<input type="number" className="stat-input flex-1 ml-0.5" value={credit.ntd} onChange={e => setCredit({...credit, ntd: e.target.value})} />
+                                    </div>
+                                </div>
                             </div>
                             <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-left">
                                 <p className="text-[10px] font-bold text-slate-400 mb-1">待收金額</p>
@@ -176,8 +180,8 @@
                                     <div className="flex items-center gap-2">
                                         <div className="bg-sky-600 p-1.5 rounded-lg text-white shadow-sm"><Icon name="user" className="w-3.5 h-3.5" /></div>
                                         <div>
-                                            <span className="font-black text-sky-900 text-sm block leading-none mb-1">{customer}</span>
-                                            {groupedOrders[customer].lastFive && <span className="text-[10px] font-bold text-sky-600 flex items-center gap-1"><Icon name="wallet" className="w-2.5 h-2.5"/>末五碼：{groupedOrders[customer].lastFive}</span>}
+                                            <span className="font-black text-sky-900 text-sm block leading-none">{customer}</span>
+                                            {groupedOrders[customer].lastFive && <span className="text-[10px] font-bold text-sky-600">末五碼：{groupedOrders[customer].lastFive}</span>}
                                         </div>
                                     </div>
                                     <div className="flex flex-col items-end gap-2">
@@ -196,11 +200,11 @@
                                         <div key={item.id} className="bg-slate-50/40 p-4 rounded-2xl border border-slate-100 flex justify-between items-center">
                                             <div className="flex-1">
                                                 <p className="text-xs font-black text-slate-700 mb-1">{item.product}</p>
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase">NT$ {Number(item.price).toLocaleString()} <span className="mx-1">/</span> {item.fPrice} {item.cur}</p>
+                                                <p className="text-[10px] font-bold text-slate-400">NT$ {Number(item.price).toLocaleString()} <span className="mx-1">/</span> {item.fPrice} {item.cur}</p>
                                             </div>
                                             <div className="flex gap-4 ml-4">
-                                                <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="text-slate-300 active-scale"><Icon name="edit" className="w-3.5 h-3.5" /></button>
-                                                <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="text-rose-200 active-scale"><Icon name="trash" className="w-3.5 h-3.5" /></button>
+                                                <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="text-slate-300"><Icon name="edit" className="w-3.5 h-3.5" /></button>
+                                                <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="text-rose-200"><Icon name="trash" className="w-3.5 h-3.5" /></button>
                                             </div>
                                         </div>
                                     ))}
@@ -212,12 +216,12 @@
                     {/* 末五碼彈窗 */}
                     {showBankModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 text-left">
-                            <div className="bg-white w-full max-w-xs rounded-[32px] p-8 shadow-2xl">
-                                <h3 className="text-lg font-black text-slate-800 mb-4 text-center">輸入帳號末五碼</h3>
-                                <input autoFocus type="tel" maxLength="5" placeholder="00000" className="w-full field-value text-center text-2xl tracking-widest outline-none mb-6" value={bankData.lastFive} onChange={e => setBankData({...bankData, lastFive: e.target.value})} />
+                            <div className="bg-white w-full max-w-xs rounded-[32px] p-8 shadow-2xl text-center">
+                                <h3 className="text-lg font-black text-slate-800 mb-4">輸入末五碼</h3>
+                                <input autoFocus type="tel" maxLength="5" className="w-full field-value text-center text-2xl tracking-widest outline-none mb-6" value={bankData.lastFive} onChange={e => setBankData({...bankData, lastFive: e.target.value})} />
                                 <div className="flex gap-3">
-                                    <button onClick={() => setShowBankModal(false)} className="flex-1 bg-slate-100 text-slate-400 py-3 rounded-xl font-black active-scale text-center text-sm">取消</button>
-                                    <button onClick={() => updateCustomerStatus(bankData.customer, '已匯款', bankData.lastFive)} className="flex-1 bg-sky-500 text-white py-3 rounded-xl font-black active-scale text-center text-sm">確認</button>
+                                    <button onClick={() => setShowBankModal(false)} className="flex-1 bg-slate-100 text-slate-400 py-3 rounded-xl font-black">取消</button>
+                                    <button onClick={() => updateCustomerStatus(bankData.customer, '已匯款', bankData.lastFive)} className="flex-1 bg-sky-500 text-white py-3 rounded-xl font-black">確認</button>
                                 </div>
                             </div>
                         </div>
@@ -226,7 +230,7 @@
                     {showModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 text-left">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
-                                <h2 className="text-2xl font-black text-slate-800 mb-6 italic">{isEditing ? 'Edit Item' : 'New Item'}</h2>
+                                <h2 className="text-2xl font-black text-slate-800 mb-6 italic">Edit Item</h2>
                                 <div className="space-y-5">
                                     <div><p className="field-label">分類 Tag</p><input className="field-value outline-none focus:border-sky-300" value={form.cat} onChange={e => setForm({...form, cat: e.target.value})} /></div>
                                     <div className="grid grid-cols-2 gap-4">
@@ -251,22 +255,6 @@
                                         </div>
                                         <input type="number" placeholder="預期利潤" className="field-value border-none text-emerald-600 font-black" value={form.fee} onChange={e => setForm({...form, fee: e.target.value})} />
                                     </div>
-
-                                    {/* 解鎖：庫存餘額編輯區 */}
-                                    <div className="pt-4 border-t border-slate-100">
-                                        <p className="field-label">更新庫存餘額 (共同基金)</p>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <p className="text-[9px] font-black text-slate-300 ml-1 mb-1">台幣 NTD</p>
-                                                <input type="number" className="field-value" value={credit.ntd} onChange={e => setCredit({...credit, ntd: e.target.value})} />
-                                            </div>
-                                            <div>
-                                                <p className="text-[9px] font-black text-slate-300 ml-1 mb-1">外幣 {credit.cur}</p>
-                                                <input type="number" className="field-value" value={credit.foreign} onChange={e => setCredit({...credit, foreign: e.target.value})} />
-                                            </div>
-                                        </div>
-                                    </div>
-
                                     <div className="flex gap-4 pt-4">
                                         <button onClick={() => setShowModal(false)} className="flex-1 bg-slate-100 text-slate-400 py-4 rounded-[20px] font-black active-scale text-center">取消</button>
                                         <button onClick={() => { if (isEditing) setItems(items.map(i => i.id === isEditing ? {...form, id: isEditing} : i)); else setItems([{...form, id: Date.now(), stage: viewMode}, ...items]); setShowModal(false); }} className="flex-[2] bg-sky-500 text-white py-4 rounded-[20px] font-black shadow-xl active-scale text-center">儲存項目</button>
