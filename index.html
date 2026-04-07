@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 v40.0</title>
+    <title>LinTin 系統 v40.1</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -51,7 +51,6 @@
             useEffect(() => { localStorage.setItem('lt_items', JSON.stringify(items)); }, [items]);
             useEffect(() => { localStorage.setItem('lt_credit', JSON.stringify(credit)); }, [credit]);
 
-            // 自動計算統計數據
             const stats = useMemo(() => {
                 const profit = items.reduce((sum, i) => sum + Number(i.fee || 0), 0);
                 const pending = items
@@ -108,9 +107,8 @@
                             <button onClick={() => { setForm({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款', lastFive: '' }); setIsEditing(null); setShowModal(true); }} className="bg-sky-500 text-white px-5 py-2.5 rounded-full font-black text-sm active-scale shadow-lg">+ 新增項目</button>
                         </div>
 
-                        {/* 頂部數據卡片 */}
                         <div className="grid grid-cols-3 gap-2 mb-5">
-                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-left relative overflow-hidden">
+                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-left">
                                 <p className="text-[10px] font-bold text-slate-400 mb-1">共同基金</p>
                                 <p className="text-[11px] font-black text-amber-500 truncate mb-1">{credit.foreign} {credit.cur}</p>
                                 <p className="text-[11px] font-black text-slate-800 leading-none">${Number(credit.ntd).toLocaleString()}</p>
@@ -145,7 +143,7 @@
                     </header>
 
                     <div className="p-4 space-y-6">
-                        {/* 採購清單模式 */}
+                        {/* 採購清單與訂單管理模式 (維持原樣) */}
                         {viewMode === 'purchase' && purchaseItems.map(item => (
                             <div key={item.id} className="bg-white rounded-[28px] p-6 shadow-sm border border-slate-200 relative text-left">
                                 <div className={`absolute top-5 right-5 px-3 py-1.5 rounded-full text-[10px] font-black text-white ${item.payer === '璇' ? 'bg-sky-300' : item.payer === '琳' ? 'bg-cyan-300' : 'bg-slate-200'}`}>{item.payer}</div>
@@ -166,7 +164,6 @@
                             </div>
                         ))}
 
-                        {/* 訂單管理模式 */}
                         {viewMode === 'order' && Object.keys(groupedOrders).map(customer => (
                             <div key={customer} className="bg-white rounded-[32px] overflow-hidden border border-slate-200 shadow-sm mb-4 text-left">
                                 <div className="bg-sky-50/50 px-6 py-5 flex justify-between items-center border-b border-sky-100/50">
@@ -230,7 +227,7 @@
                         </div>
                     )}
 
-                    {/* 編輯/新增 Modal */}
+                    {/* 編輯/新增 Modal (已修正共同基金欄位) */}
                     {showModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 text-left">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
@@ -249,18 +246,24 @@
                                     <div><p className="field-label">商品名稱 Product</p><input className="field-value outline-none" value={form.product} onChange={e => setForm({...form, product: e.target.value})} /></div>
                                     <div className="bg-slate-50 p-5 rounded-[28px] space-y-4">
                                         <div className="grid grid-cols-2 gap-4">
-                                            <input type="number" placeholder="外幣單價" className="field-value border-none text-amber-600 font-black" value={form.fPrice} onChange={e => setForm({...form, fPrice: e.target.value})} />
+                                            <input type="number" placeholder="外幣" className="field-value border-none text-amber-600 font-black" value={form.fPrice} onChange={e => setForm({...form, fPrice: e.target.value})} />
                                             <input type="number" placeholder="台幣售價" className="field-value border-none text-sky-600 font-black" value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
                                         </div>
                                         <input type="number" placeholder="預期利潤" className="field-value border-none text-emerald-600 font-black" value={form.fee} onChange={e => setForm({...form, fee: e.target.value})} />
                                     </div>
                                     
-                                    {/* 共同基金編輯 (僅在編輯模式下或新增時可順便調整) */}
+                                    {/* 重點：共同基金編輯欄位 (已加入 onChange 事件解鎖) */}
                                     <div className="pt-4 border-t border-slate-100">
                                         <p className="field-label">更新共同基金 (餘額)</p>
                                         <div className="grid grid-cols-2 gap-4">
-                                            <input type="number" placeholder="台幣餘額" className="field-value" value={credit.ntd} onChange={e => setCredit({...credit, ntd: e.target.value})} />
-                                            <input type="number" placeholder="外幣餘額" className="field-value" value={credit.foreign} onChange={e => setCredit({...credit, foreign: e.target.value})} />
+                                            <div>
+                                                <p className="text-[9px] font-bold text-slate-400 mb-1 ml-1">台幣 NTD</p>
+                                                <input type="number" className="field-value" value={credit.ntd} onChange={e => setCredit({...credit, ntd: e.target.value})} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] font-bold text-slate-400 mb-1 ml-1">外幣 {credit.cur}</p>
+                                                <input type="number" className="field-value" value={credit.foreign} onChange={e => setCredit({...credit, foreign: e.target.value})} />
+                                            </div>
                                         </div>
                                     </div>
 
