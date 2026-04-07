@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 v25.0</title>
+    <title>LinTin 系統 v26.0</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -13,9 +13,11 @@
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #F1F5F9; -webkit-tap-highlight-color: transparent; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .active-scale:active { transform: scale(0.96); }
+        /* 框外標籤格式 */
         .field-label { font-size: 10px; font-weight: 900; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; margin-left: 4px; }
-        .field-value { background-color: #F8FAFC; border: 1px solid #F1F5F9; border-radius: 12px; padding: 8px 12px; font-size: 14px; font-weight: 700; color: #1E293B; }
-        .stat-card { background: white; padding: 12px; border-radius: 20px; border: 1px solid #E2E8F0; }
+        .field-value { background-color: #F8FAFC; border: 1px solid #F1F5F9; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 700; color: #1E293B; }
+        /* 大數據面板樣式 */
+        .big-stat-card { background: white; padding: 16px; border-radius: 24px; border: 1px solid #E2E8F0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
     </style>
 </head>
 <body>
@@ -37,7 +39,7 @@
 
         const App = () => {
             const [items, setItems] = useState(() => JSON.parse(localStorage.getItem('lt_items')) || []);
-            const [pCats, setPCats] = useState(() => JSON.parse(localStorage.getItem('lt_p_cats')) || ['預設', '韓國東大門']);
+            const [pCats, setPCats] = useState(() => JSON.parse(localStorage.getItem('lt_p_cats')) || ['預設', '服飾']);
             const [credit, setCredit] = useState(() => JSON.parse(localStorage.getItem('lt_credit')) || { ntd: 0, foreign: 0, cur: 'KRW' });
             const [rates] = useState({ KRW: 0.024, JPY: 0.21, THB: 0.9, HKD: 4.1, AUD: 21.2, NTD: 1 });
             const orderStatuses = ['全部', '待付款', '已匯款', '待查帳', '已出貨', '完成'];
@@ -45,11 +47,9 @@
             const [viewMode, setViewMode] = useState('purchase'); 
             const [activePCat, setActivePCat] = useState('全部');
             const [activeStatus, setActiveStatus] = useState('全部');
-            
             const [showModal, setShowModal] = useState(false);
             const [showCreditModal, setShowCreditModal] = useState(false);
             const [isEditing, setIsEditing] = useState(null);
-
             const [form, setForm] = useState({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款' });
             const [tempCredit, setTempCredit] = useState({ ntd: 0, foreign: 0, cur: 'KRW' });
 
@@ -70,51 +70,55 @@
 
             return (
                 <div className="min-h-screen pb-10 text-slate-900">
-                    <header className="bg-white sticky top-0 z-40 border-b border-slate-200 p-5 pb-2 text-left">
-                        <div className="flex justify-between items-center mb-4">
+                    <header className="bg-white sticky top-0 z-40 border-b border-slate-200 p-5 text-left">
+                        <div className="flex justify-between items-center mb-6">
                             <div className="flex items-center gap-2">
-                                <div className="bg-slate-900 p-2 rounded-xl text-white"><Icon name="box" className="w-5 h-5" /></div>
-                                <h1 className="text-xl font-black italic tracking-tighter">LinTin</h1>
+                                <div className="bg-slate-900 p-2.5 rounded-xl text-white shadow-lg"><Icon name="box" className="w-6 h-6" /></div>
+                                <h1 className="text-2xl font-black italic tracking-tighter">LinTin</h1>
                             </div>
                             <button onClick={() => { 
                                 setForm({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款' }); 
                                 setIsEditing(null); setShowModal(true); 
-                            }} className="bg-sky-600 text-white px-4 py-2 rounded-full font-black text-sm active-scale shadow-lg shadow-sky-100 flex items-center gap-1">
-                                <Icon name="plus" /> 新增
+                            }} className="bg-sky-600 text-white px-5 py-2.5 rounded-full font-black text-sm active-scale shadow-lg shadow-sky-100">
+                                + 新增項目
                             </button>
                         </div>
 
-                        {/* 數據統計區 (修復回歸) */}
-                        <div className="grid grid-cols-3 gap-2 mb-4">
-                            <div onClick={() => { setTempCredit({...credit}); setShowCreditModal(true); }} className="stat-card cursor-pointer active-scale">
-                                <p className="text-[8px] font-black text-slate-400 uppercase mb-1">基金庫存</p>
-                                <p className="text-[10px] font-bold text-amber-600 truncate">{credit.foreign} {credit.cur}</p>
-                                <p className="text-[10px] font-bold text-slate-800">${Number(credit.ntd).toLocaleString()}</p>
+                        {/* 大數據面板 (恢復原本的大小) */}
+                        <div className="space-y-3 mb-6">
+                            <div onClick={() => { setTempCredit({...credit}); setShowCreditModal(true); }} className="big-stat-card border-l-8 border-l-amber-400 active-scale">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">基金庫存 Balance</p>
+                                <div className="flex justify-between items-end">
+                                    <p className="text-lg font-black text-amber-600 leading-none">{credit.foreign} {credit.cur}</p>
+                                    <p className="text-sm font-bold text-slate-400">≈ NT$ {Number(credit.ntd).toLocaleString()}</p>
+                                </div>
                             </div>
-                            <div className="stat-card bg-amber-50/30 border-amber-100">
-                                <p className="text-[8px] font-black text-amber-600/70 uppercase mb-1">待收訂單</p>
-                                <p className="text-xs font-black text-amber-700 mt-1">${stats.pending.toLocaleString()}</p>
-                            </div>
-                            <div className="stat-card bg-emerald-50/30 border-emerald-100">
-                                <p className="text-[8px] font-black text-emerald-600/70 uppercase mb-1">累計利潤</p>
-                                <p className="text-xs font-black text-emerald-700 mt-1">${stats.profit.toLocaleString()}</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="big-stat-card border-l-8 border-l-indigo-400 bg-indigo-50/20">
+                                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">待收訂單</p>
+                                    <p className="text-xl font-black text-indigo-700">${stats.pending.toLocaleString()}</p>
+                                </div>
+                                <div className="big-stat-card border-l-8 border-l-emerald-400 bg-emerald-50/20">
+                                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">累計利潤</p>
+                                    <p className="text-xl font-black text-emerald-700">${stats.profit.toLocaleString()}</p>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="flex gap-4 border-b border-slate-100 mb-2">
-                            <button onClick={() => setViewMode('purchase')} className={`pb-2 text-xs font-black ${viewMode === 'purchase' ? 'text-sky-600 border-b-2 border-sky-600' : 'text-slate-400'}`}>採購清單</button>
-                            <button onClick={() => setViewMode('order')} className={`pb-2 text-xs font-black ${viewMode === 'order' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400'}`}>訂單管理</button>
+                        <div className="flex gap-8 border-b border-slate-100 mb-3 px-2">
+                            <button onClick={() => setViewMode('purchase')} className={`pb-2 text-sm font-black transition-all ${viewMode === 'purchase' ? 'text-sky-600 border-b-4 border-sky-600' : 'text-slate-400'}`}>採購清單</button>
+                            <button onClick={() => setViewMode('order')} className={`pb-2 text-sm font-black transition-all ${viewMode === 'order' ? 'text-indigo-600 border-b-4 border-indigo-600' : 'text-slate-400'}`}>訂單管理</button>
                         </div>
 
                         <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
                             {viewMode === 'purchase' ? (
                                 <>
-                                    <button onClick={() => setActivePCat('全部')} className={`px-4 py-1.5 rounded-full text-[10px] font-black whitespace-nowrap ${activePCat === '全部' ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-500'}`}>全部</button>
-                                    {pCats.map(c => <button key={c} onClick={() => setActivePCat(c)} className={`px-4 py-1.5 rounded-full text-[10px] font-black whitespace-nowrap ${activePCat === c ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-500'}`}>{c}</button>)}
+                                    <button onClick={() => setActivePCat('全部')} className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap transition-all ${activePCat === '全部' ? 'bg-sky-600 text-white shadow-md' : 'bg-slate-100 text-slate-500'}`}>全部</button>
+                                    {pCats.map(c => <button key={c} onClick={() => setActivePCat(c)} className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap transition-all ${activePCat === c ? 'bg-sky-600 text-white shadow-md' : 'bg-slate-100 text-slate-500'}`}>{c}</button>)}
                                 </>
                             ) : (
                                 orderStatuses.map(s => (
-                                    <button key={s} onClick={() => setActiveStatus(s)} className={`px-4 py-1.5 rounded-full text-[10px] font-black whitespace-nowrap ${activeStatus === s ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'}`}>{s}</button>
+                                    <button key={s} onClick={() => setActiveStatus(s)} className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap transition-all ${activeStatus === s ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-500'}`}>{s}</button>
                                 ))
                             )}
                         </div>
@@ -122,10 +126,10 @@
 
                     <div className="p-4 space-y-6 text-left">
                         {filteredItems.map(item => (
-                            <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-200 relative">
-                                <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-[9px] font-black text-white ${item.payer === '璇' ? 'bg-sky-400' : item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-slate-300'}`}>{item.payer}</div>
+                            <div key={item.id} className="bg-white rounded-[28px] p-6 shadow-sm border border-slate-200 relative">
+                                <div className={`absolute top-5 right-5 px-4 py-1.5 rounded-full text-[10px] font-black text-white shadow-sm ${item.payer === '璇' ? 'bg-sky-400' : item.payer === '琳' ? 'bg-fuchsia-400' : 'bg-slate-300'}`}>{item.payer}</div>
                                 
-                                <div className="space-y-4">
+                                <div className="space-y-5">
                                     <div>
                                         <p className="field-label">客戶名稱 Client</p>
                                         <div className="field-value">{item.customer}</div>
@@ -134,37 +138,40 @@
                                         <p className="field-label">商品項目 Product</p>
                                         <div className="field-value text-slate-600">{item.product}</div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <p className="field-label">分類標籤 Tag</p>
-                                            <div className="field-value bg-sky-50/50 border-sky-100 text-sky-700 text-xs">{item.cat}</div>
+                                            <div className="field-value bg-sky-50/50 border-sky-100 text-sky-700 text-xs font-black">{item.cat}</div>
                                         </div>
                                         <div>
-                                            <p className="field-label">利潤預期 Profit</p>
-                                            <div className="field-value bg-emerald-50/50 border-emerald-100 text-emerald-700 text-xs">
-                                                ${Number(item.fee || 0).toLocaleString()}
+                                            <p className="field-label">利潤 Profit</p>
+                                            <div className="field-value bg-emerald-50/50 border-emerald-100 text-emerald-700 text-xs font-black">
+                                                $ {Number(item.fee || 0).toLocaleString()}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="mt-5 pt-4 border-t border-slate-100 flex justify-between items-center">
+                                <div className="mt-6 pt-5 border-t border-slate-100 flex justify-between items-center">
                                     <div className="flex gap-2">
-                                        <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="p-2.5 bg-slate-50 text-slate-400 rounded-xl active-scale"><Icon name="edit" /></button>
-                                        <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2.5 bg-slate-50 text-slate-400 rounded-xl active-scale"><Icon name="trash" /></button>
+                                        <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="p-3 bg-slate-50 text-slate-400 rounded-2xl active-scale border border-slate-100"><Icon name="edit" className="w-5 h-5" /></button>
+                                        <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-3 bg-slate-50 text-slate-400 rounded-2xl active-scale border border-slate-100"><Icon name="trash" className="w-5 h-5" /></button>
                                     </div>
                                     
-                                    <div className="flex flex-col items-end">
+                                    <div className="flex flex-col items-end gap-1">
                                         {viewMode === 'purchase' ? (
-                                            <button onClick={() => setItems(items.map(i => i.id === item.id ? {...i, stage:'order', orderStatus:'待付款'} : i))} className="bg-slate-900 text-white text-[10px] font-black px-4 py-2 rounded-lg mb-2 active-scale shadow-md">完成採購</button>
+                                            <button onClick={() => setItems(items.map(i => i.id === item.id ? {...i, stage:'order', orderStatus:'待付款'} : i))} className="bg-slate-900 text-white text-[11px] font-black px-6 py-2.5 rounded-xl active-scale shadow-lg shadow-slate-100">標記已買到</button>
                                         ) : (
-                                            <select className={`px-3 py-1.5 rounded-lg text-[10px] font-black outline-none text-white ${item.orderStatus === '完成' ? 'bg-emerald-500' : 'bg-indigo-600'}`} value={item.orderStatus} onChange={e => setItems(items.map(i => i.id === item.id ? {...i, orderStatus:e.target.value} : i))}>
-                                                {orderStatuses.filter(s => s !== '全部').map(s => <option key={s} value={s}>{s}</option>)}
-                                            </select>
+                                            <div className="relative">
+                                                <select className={`pl-4 pr-10 py-2.5 rounded-xl text-[11px] font-black appearance-none outline-none shadow-sm transition-all ${item.orderStatus === '完成' ? 'bg-emerald-500 text-white' : 'bg-indigo-600 text-white'}`} value={item.orderStatus} onChange={e => setItems(items.map(i => i.id === item.id ? {...i, orderStatus:e.target.value} : i))}>
+                                                    {orderStatuses.filter(s => s !== '全部').map(s => <option key={s} value={s}>{s}</option>)}
+                                                </select>
+                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/70 text-[8px]">▼</span>
+                                            </div>
                                         )}
-                                        <div className="text-right">
-                                            <p className="text-[10px] text-slate-300 font-mono leading-none mb-1 uppercase">{item.fPrice} {item.cur}</p>
-                                            <p className="text-lg font-black text-slate-800 leading-none">NT$ {Number(item.price).toLocaleString()}</p>
+                                        <div className="text-right mt-1">
+                                            <p className="text-[10px] text-slate-300 font-mono leading-none mb-1 uppercase tracking-tighter">{item.fPrice} {item.cur}</p>
+                                            <p className="text-xl font-black text-slate-900 leading-none">NT$ {Number(item.price).toLocaleString()}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -172,50 +179,55 @@
                         ))}
                     </div>
 
-                    {/* 基金 Modal */}
+                    {/* Modals 保持不變，維持你的視覺偏好 */}
                     {showCreditModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-                            <div className="bg-white w-full max-w-sm rounded-[32px] p-6 shadow-2xl text-left">
-                                <h2 className="text-xl font-black text-slate-800 mb-6 italic">基金庫存設定</h2>
-                                <div className="space-y-4">
-                                    <div className="flex gap-1 overflow-x-auto pb-2 no-scrollbar">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                            <div className="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl text-left">
+                                <h2 className="text-xl font-black text-slate-800 mb-6 italic">基金設定 Balance</h2>
+                                <div className="space-y-5">
+                                    <div className="flex gap-1.5 overflow-x-auto pb-2 no-scrollbar">
                                         {['KRW', 'JPY', 'THB', 'HKD', 'AUD'].map(c => (
-                                            <button key={c} onClick={() => setTempCredit({...tempCredit, cur: c})} className={`flex-1 min-w-[55px] py-2 rounded-lg text-[10px] font-black ${tempCredit.cur === c ? 'bg-amber-500 text-white shadow-md' : 'bg-slate-50 text-slate-400'}`}>{c}</button>
+                                            <button key={c} onClick={() => setTempCredit({...tempCredit, cur: c})} className={`flex-1 min-w-[60px] py-2.5 rounded-xl text-[11px] font-black transition-all ${tempCredit.cur === c ? 'bg-amber-500 text-white shadow-md' : 'bg-slate-50 text-slate-400'}`}>{c}</button>
                                         ))}
                                     </div>
-                                    <input type="number" placeholder="外幣金額" className="w-full field-value outline-none" value={tempCredit.foreign} onChange={e => setTempCredit({...tempCredit, foreign: e.target.value})} />
-                                    <input type="number" placeholder="台幣總額" className="w-full field-value outline-none" value={tempCredit.ntd} onChange={e => setTempCredit({...tempCredit, ntd: e.target.value})} />
-                                    <button onClick={() => { setCredit({...tempCredit}); setShowCreditModal(false); }} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black active-scale">更新基金資料</button>
-                                    <button onClick={() => setShowCreditModal(false)} className="w-full text-slate-400 text-xs font-bold text-center mt-2">取消修改</button>
+                                    <div>
+                                        <p className="field-label">外幣金額 Foreign</p>
+                                        <input type="number" className="w-full field-value outline-none" value={tempCredit.foreign} onChange={e => setTempCredit({...tempCredit, foreign: e.target.value})} />
+                                    </div>
+                                    <div>
+                                        <p className="field-label">台幣等值 NTD</p>
+                                        <input type="number" className="w-full field-value outline-none" value={tempCredit.ntd} onChange={e => setTempCredit({...tempCredit, ntd: e.target.value})} />
+                                    </div>
+                                    <button onClick={() => { setCredit({...tempCredit}); setShowCreditModal(false); }} className="w-full bg-slate-900 text-white py-4 rounded-[20px] font-black active-scale shadow-xl shadow-slate-200">儲存變更</button>
+                                    <button onClick={() => setShowCreditModal(false)} className="w-full text-slate-400 text-xs font-bold text-center">取消</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* 新增/編輯 Modal */}
                     {showModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-                            <div className="bg-white w-full max-w-md rounded-[32px] p-6 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar text-left">
-                                <h2 className="text-xl font-black text-slate-800 mb-6 italic">編輯項目內容</h2>
-                                <div className="space-y-4">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                            <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar text-left">
+                                <h2 className="text-2xl font-black text-slate-800 mb-6 italic">{isEditing ? 'Edit Item' : 'New Item'}</h2>
+                                <div className="space-y-5">
                                     <div>
-                                        <p className="field-label">分類標籤 Tag</p>
-                                        <div className="flex flex-wrap gap-2 mb-2">
+                                        <p className="field-label">標籤分類 Tag</p>
+                                        <div className="flex flex-wrap gap-2 mb-3">
                                             {pCats.map(c => (
-                                                <button key={c} onClick={() => setForm({...form, cat: c})} className={`px-3 py-1.5 rounded-full text-[10px] font-bold ${form.cat === c ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-400'}`}>{c}</button>
+                                                <button key={c} onClick={() => setForm({...form, cat: c})} className={`px-4 py-2 rounded-full text-[11px] font-black transition-all ${form.cat === c ? 'bg-sky-600 text-white shadow-md' : 'bg-slate-100 text-slate-400'}`}>{c}</button>
                                             ))}
                                         </div>
-                                        <input placeholder="+ 新增標籤" className="w-full field-value outline-none focus:border-sky-300" value={form.cat} onChange={e => setForm({...form, cat: e.target.value})} />
+                                        <input placeholder="+ 新增分類標籤" className="w-full field-value outline-none focus:border-sky-300" value={form.cat} onChange={e => setForm({...form, cat: e.target.value})} />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <p className="field-label">客戶名稱 Client</p>
+                                            <p className="field-label">客戶 Client</p>
                                             <input className="w-full field-value outline-none" value={form.customer} onChange={e => setForm({...form, customer: e.target.value})} />
                                         </div>
                                         <div>
-                                            <p className="field-label">支付對象 Payer</p>
-                                            <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
-                                                {['琳', '璇', '無'].map(p => <button key={p} onClick={() => setForm({...form, payer: p})} className={`flex-1 py-1.5 rounded-lg text-[10px] font-black ${form.payer === p ? 'bg-white shadow-sm' : 'text-slate-400'}`}>{p}</button>)}
+                                            <p className="field-label">支付 Payer</p>
+                                            <div className="flex gap-1 bg-slate-100 p-1.5 rounded-[14px]">
+                                                {['琳', '璇', '無'].map(p => <button key={p} onClick={() => setForm({...form, payer: p})} className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all ${form.payer === p ? 'bg-white shadow-sm' : 'text-slate-400'}`}>{p}</button>)}
                                             </div>
                                         </div>
                                     </div>
@@ -223,26 +235,30 @@
                                         <p className="field-label">商品名稱 Product</p>
                                         <input className="w-full field-value outline-none" value={form.product} onChange={e => setForm({...form, product: e.target.value})} />
                                     </div>
-                                    <div className="bg-slate-50 p-4 rounded-2xl space-y-3">
-                                        <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-slate-50 p-5 rounded-[28px] space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <p className="field-label">外幣單價</p>
-                                                <input type="number" className="w-full field-value outline-none border-none shadow-inner" value={form.fPrice} onChange={e => setForm({...form, fPrice: e.target.value, price: Math.round(e.target.value * rates[form.cur])})} />
+                                                <input type="number" className="w-full field-value border-none shadow-inner text-amber-600" value={form.fPrice} onChange={e => setForm({...form, fPrice: e.target.value, price: Math.round(e.target.value * rates[form.cur])})} />
                                             </div>
                                             <div>
-                                                <p className="field-label">利潤 Profit</p>
-                                                <input type="number" className="w-full field-value outline-none border-none shadow-inner text-emerald-600" value={form.fee} onChange={e => setForm({...form, fee: e.target.value})} />
+                                                <p className="field-label">台幣售價</p>
+                                                <input type="number" className="w-full field-value border-none shadow-inner text-sky-600" value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
                                             </div>
                                         </div>
+                                        <div>
+                                            <p className="field-label">預期利潤 Profit</p>
+                                            <input type="number" className="w-full field-value border-none shadow-inner text-emerald-600" value={form.fee} onChange={e => setForm({...form, fee: e.target.value})} />
+                                        </div>
                                     </div>
-                                    <div className="flex gap-3 pt-4">
-                                        <button onClick={() => setShowModal(false)} className="flex-1 bg-slate-100 text-slate-400 py-4 rounded-2xl font-black active-scale">取消</button>
+                                    <div className="flex gap-4 pt-4">
+                                        <button onClick={() => setShowModal(false)} className="flex-1 bg-slate-100 text-slate-400 py-4 rounded-[20px] font-black active-scale">取消</button>
                                         <button onClick={() => {
                                             if (form.cat && !pCats.includes(form.cat)) setPCats([...pCats, form.cat]);
                                             if (isEditing) setItems(items.map(i => i.id === isEditing ? {...form, id: isEditing} : i));
                                             else setItems([{...form, id: Date.now(), stage: viewMode}, ...items]);
                                             setShowModal(false);
-                                        }} className="flex-[2] bg-slate-900 text-white py-4 rounded-2xl font-black shadow-lg active-scale">儲存修改</button>
+                                        }} className="flex-[2] bg-slate-900 text-white py-4 rounded-[20px] font-black shadow-xl active-scale">確認儲存</button>
                                     </div>
                                 </div>
                             </div>
