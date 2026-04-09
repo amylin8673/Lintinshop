@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 v37.14</title>
+    <title>LinTin 系統 v37.15</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -71,7 +71,6 @@
             useEffect(() => { localStorage.setItem('lt_items', JSON.stringify(items)); }, [items]);
             useEffect(() => { localStorage.setItem('lt_credit', JSON.stringify(credit)); }, [credit]);
 
-            // 邏輯優化：允許空值或 0，空值時不計算台幣
             const handleFPriceChange = (val) => {
                 const fPrice = val;
                 if (!fPrice || fPrice === '0' || fPrice === '') {
@@ -167,14 +166,21 @@
                                 const isUnpriced = !item.fPrice || item.fPrice === '0' || item.fPrice === '';
                                 return (
                                     <div key={item.id} className={`bg-white rounded-[28px] p-6 shadow-sm border relative transition-all ${isUnpriced ? 'border-rose-200 bg-rose-50/20' : 'border-slate-200'}`}>
+                                        
+                                        {/* 分類標籤顯示 */}
+                                        <div className="absolute top-5 left-6 flex gap-2">
+                                            <span className="bg-slate-100 text-slate-500 px-2 py-1 rounded-lg text-[9px] font-black tracking-wider uppercase">
+                                                #{item.cat || '預設'}
+                                            </span>
+                                        </div>
+
                                         <div className={`absolute top-5 right-5 px-3 py-1.5 rounded-full text-[10px] font-black text-white ${item.payer === '璇' ? 'bg-sky-300' : item.payer === '琳' ? 'bg-cyan-300' : 'bg-slate-200'}`}>{item.payer}</div>
                                         
-                                        {/* 視覺提醒：待定價標記 */}
                                         {isUnpriced && (
                                             <div className="absolute top-14 right-5 bg-rose-500 text-white px-2 py-0.5 rounded text-[10px] font-black animate-pulse-slow">⚠️ 待定價</div>
                                         )}
 
-                                        <div className="space-y-4">
+                                        <div className="space-y-4 mt-4">
                                             <div><p className="field-label">客戶</p><div className="field-value">{item.customer}</div></div>
                                             <div><p className="field-label">商品</p><div className="field-value text-slate-600">{item.product}</div></div>
                                             <div className="flex justify-between items-end pt-4 border-t border-slate-50">
@@ -217,7 +223,11 @@
                                     <div className="p-4 space-y-2 bg-white">
                                         {groupedOrders[customer].items.map(item => (
                                             <div key={item.id} className="bg-slate-50/40 p-4 rounded-2xl flex justify-between items-center">
-                                                <div className="flex-1"><p className="text-xs font-black text-slate-700">{item.product}</p><p className="text-[10px] font-bold text-slate-400">{item.price ? `NT$ ${Number(item.price).toLocaleString()}` : '未定價'} / {item.fPrice || 0} {item.cur}</p></div>
+                                                <div className="flex-1">
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase">#{item.cat}</span>
+                                                    <p className="text-xs font-black text-slate-700">{item.product}</p>
+                                                    <p className="text-[10px] font-bold text-slate-400">{item.price ? `NT$ ${Number(item.price).toLocaleString()}` : '未定價'} / {item.fPrice || 0} {item.cur}</p>
+                                                </div>
                                                 <div className="flex gap-4 ml-4"><button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="text-slate-300"><Icon name="edit" className="w-3.5 h-3.5" /></button></div>
                                             </div>
                                         ))}
