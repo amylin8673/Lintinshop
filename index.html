@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 v37.12</title>
+    <title>LinTin 系統 v37.13</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -39,13 +39,14 @@
         const App = () => {
             const [items, setItems] = useState(() => JSON.parse(localStorage.getItem('lt_items')) || []);
             const [credit, setCredit] = useState(() => JSON.parse(localStorage.getItem('lt_credit')) || { ntd: 0, foreign: 0, cur: 'KRW' });
-            const [rates, setRates] = useState({ KRW: 0.0215, JPY: 0.199, THB: 0.9, HKD: 4.1, AUD: 22.3, USD: 32.5, NTD: 1 });
+            
+            // 已更新為 2026/04/09 基準匯率
+            const [rates, setRates] = useState({ KRW: 0.0215, JPY: 0.1997, THB: 0.9, HKD: 4.1, AUD: 22.3, USD: 32.5, NTD: 1 });
             const [isSyncing, setIsSyncing] = useState(false);
 
             const [viewMode, setViewMode] = useState('purchase'); 
             const [activePCat, setActivePCat] = useState('全部');
             const [activeStatus, setActiveStatus] = useState('全部');
-            
             const [showModal, setShowModal] = useState(false);
             const [isEditing, setIsEditing] = useState(null);
             const [showBankModal, setShowBankModal] = useState(false);
@@ -71,7 +72,7 @@
             useEffect(() => { localStorage.setItem('lt_items', JSON.stringify(items)); }, [items]);
             useEffect(() => { localStorage.setItem('lt_credit', JSON.stringify(credit)); }, [credit]);
 
-            // 修改：僅自動換算台幣售價，不再自動填入利潤
+            // 修改：台幣售價純反應匯率
             const handleFPriceChange = (val) => {
                 const fPrice = val;
                 if (!fPrice || fPrice === '0') {
@@ -79,7 +80,7 @@
                     return;
                 }
                 const rate = rates[form.cur] || 1;
-                const ntdPrice = Math.round(fPrice * rate * 1.1); // 這裡的 1.1 僅作為建議售價參考
+                const ntdPrice = Math.round(fPrice * rate); 
                 setForm({ ...form, fPrice, price: ntdPrice });
             };
 
@@ -121,8 +122,8 @@
                             <button onClick={() => { setForm({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款', lastFive: '' }); setIsEditing(null); setShowModal(true); }} className="bg-sky-500 text-white px-5 py-2.5 rounded-full font-black text-sm active-scale shadow-lg">+ 新增項目</button>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 mb-5">
-                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm relative text-left">
+                        <div className="grid grid-cols-3 gap-2 mb-5 text-left">
+                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm relative">
                                 <p className="text-[10px] font-bold text-slate-400 mb-1 flex justify-between items-center">
                                     庫存餘額 <button onClick={fetchRates} className={isSyncing ? 'animate-spin text-sky-500' : 'text-slate-300'}><Icon name="refresh" className="w-2.5 h-2.5" /></button>
                                 </p>
@@ -134,11 +135,11 @@
                                 </div>
                                 <div className="flex items-center text-[11px] font-black text-slate-800">$<input type="number" className="stat-input flex-1 ml-0.5" value={credit.ntd} onChange={e => setCredit({...credit, ntd: e.target.value})} /></div>
                             </div>
-                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-left">
+                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
                                 <p className="text-[10px] font-bold text-slate-400 mb-1">待收金額</p>
                                 <p className="text-xs font-black text-sky-600 mt-1">${stats.pending.toLocaleString()}</p>
                             </div>
-                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-left">
+                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
                                 <p className="text-[10px] font-bold text-slate-400 mb-1">利潤統計</p>
                                 <p className="text-xs font-black text-emerald-500 mt-1">${stats.profit.toLocaleString()}</p>
                             </div>
@@ -161,22 +162,22 @@
                         </div>
                     </header>
 
-                    <div className="p-4 space-y-6">
+                    <div className="p-4 space-y-6 text-left">
                         {viewMode === 'purchase' ? (
                             items.filter(i => i.stage === 'purchase' && (activePCat === '全部' || i.cat === activePCat)).map(item => (
-                                <div key={item.id} className="bg-white rounded-[28px] p-6 shadow-sm border border-slate-200 relative text-left">
+                                <div key={item.id} className="bg-white rounded-[28px] p-6 shadow-sm border border-slate-200 relative">
                                     <div className={`absolute top-5 right-5 px-3 py-1.5 rounded-full text-[10px] font-black text-white ${item.payer === '璇' ? 'bg-sky-300' : item.payer === '琳' ? 'bg-cyan-300' : 'bg-slate-200'}`}>{item.payer}</div>
                                     <div className="space-y-4">
                                         <div><p className="field-label">客戶</p><div className="field-value">{item.customer}</div></div>
                                         <div><p className="field-label">商品</p><div className="field-value text-slate-600">{item.product}</div></div>
                                         <div className="flex justify-between items-end pt-4 border-t border-slate-50">
-                                            {(!item.fPrice || item.fPrice === '0') && <div className="absolute top-14 right-5 text-rose-500 font-black text-[10px] animate-pulse">⚠️ 待確認當地價格</div>}
+                                            {(!item.fPrice || item.fPrice === '0') && <div className="absolute top-14 right-5 text-rose-500 font-black text-[10px] animate-pulse">⚠️ 待確認價格</div>}
                                             <div className="flex gap-2">
                                                 <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="p-3 bg-slate-50 text-slate-400 rounded-xl active-scale"><Icon name="edit" /></button>
                                                 <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-3 bg-slate-50 text-slate-400 rounded-xl active-scale"><Icon name="trash" /></button>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-xl font-black text-slate-900 leading-none mb-3">NT$ {Number(item.price).toLocaleString()}</p>
+                                                <p className="text-xl font-black text-slate-900 mb-3">NT$ {Number(item.price).toLocaleString()}</p>
                                                 <button onClick={() => setItems(items.map(i => i.id === item.id ? {...i, stage:'order', orderStatus:'待付款'} : i))} className="bg-sky-500 text-white text-[11px] font-black px-6 py-2.5 rounded-xl active-scale shadow-lg">完成採購</button>
                                             </div>
                                         </div>
@@ -185,7 +186,7 @@
                             ))
                         ) : (
                             Object.keys(groupedOrders).map(customer => (
-                                <div key={customer} className="bg-white rounded-[32px] overflow-hidden border border-slate-200 shadow-sm mb-4 text-left">
+                                <div key={customer} className="bg-white rounded-[32px] overflow-hidden border border-slate-200 shadow-sm mb-4">
                                     <div className="bg-sky-50/50 px-6 py-5 flex justify-between items-center border-b border-sky-100/50">
                                         <div className="flex items-center gap-2">
                                             <div className="bg-sky-600 p-1.5 rounded-lg text-white"><Icon name="user" className="w-3.5 h-3.5" /></div>
@@ -239,11 +240,10 @@
                                             {Object.keys(rates).map(c => <button key={c} onClick={() => setForm({...form, cur: c})} className={`py-2 rounded-lg text-[10px] font-black border transition-all ${form.cur === c ? 'bg-sky-500 border-sky-600 text-white' : 'bg-white text-slate-400'}`}>{c}</button>)}
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
-                                            <input type="number" placeholder="外幣單價" className="field-value border-none text-amber-600 font-black" value={form.fPrice} onChange={e => handleFPriceChange(e.target.value)} />
-                                            <input type="number" placeholder="台幣售價" className="field-value border-none text-sky-600 font-black" value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
+                                            <input type="number" placeholder="外幣單價" className="field-value border-none text-amber-600" value={form.fPrice} onChange={e => handleFPriceChange(e.target.value)} />
+                                            <input type="number" placeholder="台幣成本" className="field-value border-none text-sky-600" value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
                                         </div>
-                                        {/* 手動輸入預期利潤，不再自動填充 */}
-                                        <input type="number" placeholder="預期利潤" className="field-value border-none text-emerald-600 font-black" value={form.fee} onChange={e => setForm({...form, fee: e.target.value})} />
+                                        <input type="number" placeholder="手動輸入利潤" className="field-value border-none text-emerald-600" value={form.fee} onChange={e => setForm({...form, fee: e.target.value})} />
                                     </div>
                                     <div className="flex gap-4 pt-4">
                                         <button onClick={() => setShowModal(false)} className="flex-1 bg-slate-100 text-slate-400 py-4 rounded-[20px] font-black">取消</button>
