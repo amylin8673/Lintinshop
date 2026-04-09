@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 v37.15</title>
+    <title>LinTin 系統 v37.16</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -51,6 +51,12 @@
             const [showBankModal, setShowBankModal] = useState(false);
             const [bankData, setBankData] = useState({ customer: '', lastFive: '' });
             const [form, setForm] = useState({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款', lastFive: '' });
+
+            // 關鍵更新：自動從所有項目中提取分類名稱
+            const categories = useMemo(() => {
+                const allCats = items.filter(i => i.stage === 'purchase').map(i => i.cat || '預設');
+                return ['全部', ...new Set(allCats)];
+            }, [items]);
 
             const fetchRates = async () => {
                 setIsSyncing(true);
@@ -150,10 +156,15 @@
 
                         <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
                             {viewMode === 'purchase' ? (
-                                <>
-                                    <button onClick={() => setActivePCat('全部')} className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap ${activePCat === '全部' ? 'bg-sky-500 text-white' : 'bg-slate-100 text-slate-500'}`}>全部</button>
-                                    {['預設', '韓國東大門'].map(c => <button key={c} onClick={() => setActivePCat(c)} className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap ${activePCat === c ? 'bg-sky-500 text-white' : 'bg-slate-100 text-slate-500'}`}>{c}</button>)}
-                                </>
+                                categories.map(c => (
+                                    <button 
+                                        key={c} 
+                                        onClick={() => setActivePCat(c)} 
+                                        className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap transition-all ${activePCat === c ? 'bg-sky-500 text-white' : 'bg-slate-100 text-slate-500'}`}
+                                    >
+                                        {c}
+                                    </button>
+                                ))
                             ) : (
                                 orderStatuses.map(s => <button key={s} onClick={() => setActiveStatus(s)} className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap ${activeStatus === s ? 'bg-sky-700 text-white' : 'bg-slate-100 text-slate-500'}`}>{s}</button>)
                             )}
@@ -162,12 +173,11 @@
 
                     <div className="p-4 space-y-6 text-left">
                         {viewMode === 'purchase' ? (
-                            items.filter(i => i.stage === 'purchase' && (activePCat === '全部' || i.cat === activePCat)).map(item => {
+                            items.filter(i => i.stage === 'purchase' && (activePCat === '全部' || (i.cat || '預設') === activePCat)).map(item => {
                                 const isUnpriced = !item.fPrice || item.fPrice === '0' || item.fPrice === '';
                                 return (
                                     <div key={item.id} className={`bg-white rounded-[28px] p-6 shadow-sm border relative transition-all ${isUnpriced ? 'border-rose-200 bg-rose-50/20' : 'border-slate-200'}`}>
                                         
-                                        {/* 分類標籤顯示 */}
                                         <div className="absolute top-5 left-6 flex gap-2">
                                             <span className="bg-slate-100 text-slate-500 px-2 py-1 rounded-lg text-[9px] font-black tracking-wider uppercase">
                                                 #{item.cat || '預設'}
@@ -287,3 +297,4 @@
     </script>
 </body>
 </html>
+
