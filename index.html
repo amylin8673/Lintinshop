@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 v37.17</title>
+    <title>LinTin 系統 v37.18</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -13,12 +13,13 @@
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #F8FAFC; -webkit-tap-highlight-color: transparent; text-align: left; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .active-scale:active { transform: scale(0.96); }
-        .field-label { font-size: 10px; font-weight: 900; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; margin-left: 4px; }
-        .field-value { background-color: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 700; color: #1E293B; width: 100%; outline: none; }
+        .field-label { font-size: 10px; font-weight: 900; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+        .field-value { background-color: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 14px; padding: 10px 14px; font-size: 14px; font-weight: 700; color: #1E293B; width: 100%; outline: none; }
         .stat-input { background: transparent; border: none; padding: 0; font-weight: 900; outline: none; width: 100%; }
         .currency-select { background: #FEF3C7; color: #D97706; font-size: 10px; font-weight: 900; padding: 1px 4px; border-radius: 4px; border: none; outline: none; appearance: none; cursor: pointer; }
         @keyframes pulse-slow { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .animate-pulse-slow { animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        .card-shadow { box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); }
     </style>
 </head>
 <body>
@@ -33,7 +34,8 @@
                 edit: <path d="M14.06 3.02l.92.92L5.92 13H5v-.92l9.06-9.06M17.66 1c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 15.25V21h5.75L19.81 9.94l-3.75-3.75z" />,
                 trash: <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z" />,
                 user: <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />,
-                refresh: <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                refresh: <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />,
+                tag: <path d="M12.893 19.107a3.001 3.001 0 1 1-4.243-4.243l4.243-4.243a3.001 3.001 0 1 1 4.243 4.243l-4.243 4.243z" />
             };
             return <svg className={className} viewBox="0 0 24 24" fill="currentColor">{icons[name]}</svg>;
         };
@@ -170,51 +172,70 @@
                         </div>
                     </header>
 
-                    <div className="p-4 space-y-6 text-left">
+                    <div className="p-4 space-y-5 text-left">
                         {viewMode === 'purchase' ? (
                             items.filter(i => i.stage === 'purchase' && (activePCat === '全部' || (i.cat || '預設') === activePCat)).map(item => {
                                 const isUnpriced = !item.fPrice || item.fPrice === '0' || item.fPrice === '';
                                 return (
-                                    <div key={item.id} className={`bg-white rounded-[28px] p-6 shadow-sm border relative transition-all ${isUnpriced ? 'border-rose-200 bg-rose-50/20' : 'border-slate-200'}`}>
+                                    <div key={item.id} className={`bg-white rounded-[32px] p-6 card-shadow border transition-all relative ${isUnpriced ? 'border-rose-100 bg-rose-50/10' : 'border-slate-100'}`}>
                                         
-                                        <div className="absolute top-5 left-6 flex gap-2">
-                                            <span className="bg-slate-100 text-slate-500 px-2 py-1 rounded-lg text-[9px] font-black tracking-wider uppercase">
+                                        {/* 分類標籤：精緻膠囊化 */}
+                                        <div className="absolute top-4 left-6">
+                                            <span className="bg-slate-50 text-slate-400 px-3 py-1 rounded-full text-[9px] font-black tracking-widest border border-slate-100 shadow-sm uppercase">
                                                 #{item.cat || '預設'}
                                             </span>
                                         </div>
 
-                                        <div className={`absolute top-5 right-5 px-3 py-1.5 rounded-full text-[10px] font-black text-white ${item.payer === '璇' ? 'bg-sky-300' : item.payer === '琳' ? 'bg-cyan-300' : 'bg-slate-200'}`}>{item.payer}</div>
-                                        
-                                        {isUnpriced && (
-                                            <div className="absolute top-14 right-5 bg-rose-500 text-white px-2 py-0.5 rounded text-[10px] font-black animate-pulse-slow">⚠️ 待定價</div>
-                                        )}
+                                        {/* 支付人標籤 */}
+                                        <div className={`absolute top-4 right-5 px-3 py-1.5 rounded-full text-[10px] font-black text-white shadow-sm ${item.payer === '璇' ? 'bg-sky-400' : item.payer === '琳' ? 'bg-cyan-400' : 'bg-slate-300'}`}>
+                                            {item.payer}
+                                        </div>
 
-                                        <div className="space-y-4 mt-4">
-                                            <div><p className="field-label">客戶</p><div className="field-value">{item.customer}</div></div>
-                                            <div><p className="field-label">商品</p><div className="field-value text-slate-600">{item.product}</div></div>
-                                            <div className="flex justify-between items-end pt-4 border-t border-slate-50">
-                                                <div className="flex gap-2">
-                                                    <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="p-3 bg-slate-50 text-slate-400 rounded-xl active-scale"><Icon name="edit" /></button>
-                                                    <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-3 bg-slate-50 text-slate-400 rounded-xl active-scale"><Icon name="trash" /></button>
+                                        <div className="mt-8 space-y-4">
+                                            {/* 客戶與商品區塊 */}
+                                            <div className="flex items-start gap-3">
+                                                <div className="bg-sky-50 text-sky-500 p-2.5 rounded-2xl">
+                                                    <Icon name="user" className="w-5 h-5" />
                                                 </div>
-                                                <div className="text-right">
+                                                <div className="flex-1">
+                                                    <p className="text-[10px] font-black text-slate-400 leading-none mb-1">CUSTOMER</p>
+                                                    <h3 className="text-base font-black text-slate-800">{item.customer}</h3>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-50">
+                                                <p className="text-[10px] font-black text-slate-400 leading-none mb-1.5 uppercase">Product Item</p>
+                                                <p className="text-sm font-bold text-slate-600 leading-relaxed">{item.product}</p>
+                                            </div>
+
+                                            {/* 金額區塊與動作 */}
+                                            <div className="flex justify-between items-end pt-2">
+                                                <div className="space-y-1">
                                                     {!isUnpriced && item.fee > 0 && (
-                                                        <span className="bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded text-[9px] font-black mb-1 inline-block uppercase">
-                                                            Profit +${Number(item.fee).toLocaleString()}
-                                                        </span>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                                                            <span className="text-emerald-500 text-[10px] font-black uppercase">Profit +${Number(item.fee).toLocaleString()}</span>
+                                                        </div>
                                                     )}
-                                                    <p className={`text-xl font-black mb-0.5 ${isUnpriced ? 'text-rose-400 italic' : 'text-slate-900'}`}>
-                                                        {isUnpriced ? 'NT$ 未定' : `NT$ ${Number(item.price).toLocaleString()}`}
+                                                    <p className={`text-2xl font-black ${isUnpriced ? 'text-rose-400 italic text-xl' : 'text-slate-900'}`}>
+                                                        {isUnpriced ? '待定價' : `NT$ ${Number(item.price).toLocaleString()}`}
                                                     </p>
                                                     {!isUnpriced && (
-                                                        <p className="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-wider">
+                                                        <p className="text-[11px] font-bold text-slate-400 uppercase">
                                                             {Number(item.fPrice).toLocaleString()} {item.cur}
                                                         </p>
                                                     )}
+                                                </div>
+
+                                                <div className="flex flex-col gap-3">
+                                                    <div className="flex gap-2 self-end">
+                                                        <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="p-2.5 bg-slate-100 text-slate-400 rounded-xl active-scale transition-colors hover:bg-slate-200"><Icon name="edit" className="w-3.5 h-3.5" /></button>
+                                                        <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2.5 bg-rose-50 text-rose-300 rounded-xl active-scale transition-colors hover:bg-rose-100"><Icon name="trash" className="w-3.5 h-3.5" /></button>
+                                                    </div>
                                                     <button 
                                                         disabled={isUnpriced}
                                                         onClick={() => setItems(items.map(i => i.id === item.id ? {...i, stage:'order', orderStatus:'待付款'} : i))} 
-                                                        className={`text-[11px] font-black px-6 py-2.5 rounded-xl active-scale shadow-lg ${isUnpriced ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-sky-500 text-white'}`}
+                                                        className={`px-6 py-3 rounded-2xl font-black text-[11px] active-scale shadow-lg transition-all ${isUnpriced ? 'bg-slate-100 text-slate-300 cursor-not-allowed shadow-none' : 'bg-sky-500 text-white hover:bg-sky-600'}`}
                                                     >
                                                         完成採購
                                                     </button>
