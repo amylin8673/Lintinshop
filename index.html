@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 v37.16</title>
+    <title>LinTin 系統 v37.17</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -52,7 +52,6 @@
             const [bankData, setBankData] = useState({ customer: '', lastFive: '' });
             const [form, setForm] = useState({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款', lastFive: '' });
 
-            // 關鍵更新：自動從所有項目中提取分類名稱
             const categories = useMemo(() => {
                 const allCats = items.filter(i => i.stage === 'purchase').map(i => i.cat || '預設');
                 return ['全部', ...new Set(allCats)];
@@ -199,9 +198,19 @@
                                                     <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-3 bg-slate-50 text-slate-400 rounded-xl active-scale"><Icon name="trash" /></button>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className={`text-xl font-black mb-3 ${isUnpriced ? 'text-rose-400 italic' : 'text-slate-900'}`}>
+                                                    {!isUnpriced && item.fee > 0 && (
+                                                        <span className="bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded text-[9px] font-black mb-1 inline-block uppercase">
+                                                            Profit +${Number(item.fee).toLocaleString()}
+                                                        </span>
+                                                    )}
+                                                    <p className={`text-xl font-black mb-0.5 ${isUnpriced ? 'text-rose-400 italic' : 'text-slate-900'}`}>
                                                         {isUnpriced ? 'NT$ 未定' : `NT$ ${Number(item.price).toLocaleString()}`}
                                                     </p>
+                                                    {!isUnpriced && (
+                                                        <p className="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-wider">
+                                                            {Number(item.fPrice).toLocaleString()} {item.cur}
+                                                        </p>
+                                                    )}
                                                     <button 
                                                         disabled={isUnpriced}
                                                         onClick={() => setItems(items.map(i => i.id === item.id ? {...i, stage:'order', orderStatus:'待付款'} : i))} 
@@ -297,4 +306,3 @@
     </script>
 </body>
 </html>
-
