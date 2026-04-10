@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 - 自動匯率同步版</title>
+    <title>LinTin 系統 - 餘額切換進階版</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -45,7 +45,8 @@
                 box: <path d="M21 8l-2-2H5L3 8v11a2 2 0 002 2h14a2 2 0 002-2V8zM5 8l1.5-1.5h11L19 8H5zm14 11H5V10h14v9zM9 12h6v2H9v-2z" />,
                 edit: <path d="M14.06 3.02l.92.92L5.92 13H5v-.92l9.06-9.06M17.66 1c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 15.25V21h5.75L19.81 9.94l-3.75-3.75z" />,
                 trash: <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z" />,
-                user: <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                user: <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />,
+                chevron: <path d="M7 10l5 5 5-5H7z" />
             };
             return <svg className={className} viewBox="0 0 24 24" fill="currentColor">{icons[name]}</svg>;
         };
@@ -53,7 +54,6 @@
         const App = () => {
             const [items, setItems] = useState([]);
             const [credit, setCredit] = useState({ ntd: 0, foreign: 0, cur: 'KRW' });
-            // 預設匯率 (備援用)
             const [rates, setRates] = useState({ KRW: 0.0215, JPY: 0.1997, THB: 0.9, HKD: 4.1, AUD: 22.3, USD: 32.5, NTD: 1 });
             const [viewMode, setViewMode] = useState('purchase'); 
             const [activePCat, setActivePCat] = useState('全部');
@@ -61,17 +61,16 @@
             const [showModal, setShowModal] = useState(false);
             const [isEditing, setIsEditing] = useState(null);
             const [showBankModal, setShowBankModal] = useState(false);
+            const [showCurSelect, setShowCurSelect] = useState(false);
             const [bankData, setBankData] = useState({ customer: '', lastFive: '' });
             const [form, setForm] = useState({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款', lastFive: '' });
 
-            // 🌐 核心：即時抓取匯率 API
             useEffect(() => {
                 const fetchRates = async () => {
                     try {
                         const response = await fetch('https://open.er-api.com/v6/latest/TWD');
                         const data = await response.json();
                         if (data && data.rates) {
-                            // API 給的是 1 TWD 等於多少外幣，所以我們要倒過來計算
                             const newRates = {
                                 KRW: 1 / data.rates.KRW,
                                 JPY: 1 / data.rates.JPY,
@@ -82,11 +81,8 @@
                                 NTD: 1
                             };
                             setRates(newRates);
-                            console.log("匯率已自動更新:", newRates);
                         }
-                    } catch (error) {
-                        console.error("匯率抓取失敗，使用預設值:", error);
-                    }
+                    } catch (error) { console.error("Rate fetch failed:", error); }
                 };
                 fetchRates();
             }, []);
@@ -104,11 +100,8 @@
             }, []);
 
             const handleSave = (itemData) => {
-                if (isEditing) {
-                    db.ref(`items/${isEditing}`).set({ ...itemData, timestamp: Date.now() });
-                } else {
-                    db.ref('items').push({ ...itemData, timestamp: Date.now(), stage: viewMode });
-                }
+                if (isEditing) { db.ref(`items/${isEditing}`).set({ ...itemData, timestamp: Date.now() }); } 
+                else { db.ref('items').push({ ...itemData, timestamp: Date.now(), stage: viewMode }); }
                 setShowModal(false);
             };
 
@@ -154,11 +147,26 @@
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 mb-5">
-                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-center">
+                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-center relative">
                                 <p className="text-[10px] font-bold text-slate-400 mb-1 uppercase">餘額</p>
                                 <div className="flex items-center justify-center gap-1">
-                                    <input type="number" className="stat-input text-[11px] text-amber-500 w-12 text-center" value={credit.foreign} onChange={e => updateCredit({...credit, foreign: e.target.value})} />
-                                    <span className="text-[9px] font-black text-amber-400">{credit.cur}</span>
+                                    <input type="number" className="stat-input text-[11px] text-amber-500 w-12 text-center" value={credit.foreign} onChange={e => {
+                                        const val = e.target.value;
+                                        updateCredit({...credit, foreign: val, ntd: Math.round(val * rates[credit.cur])});
+                                    }} />
+                                    <button onClick={() => setShowCurSelect(!showCurSelect)} className="flex items-center text-[9px] font-black text-amber-400 bg-amber-50 px-1 rounded">
+                                        {credit.cur} <Icon name="chevron" className="w-2 h-2" />
+                                    </button>
+                                    {showCurSelect && (
+                                        <div className="absolute top-full left-0 w-full bg-white border border-slate-100 shadow-xl rounded-xl z-50 grid grid-cols-3 p-1 gap-1">
+                                            {Object.keys(rates).filter(c=>c!=='NTD').map(c => (
+                                                <button key={c} className="text-[10px] py-1 font-bold hover:bg-slate-50" onClick={() => {
+                                                    updateCredit({...credit, cur: c, ntd: Math.round(credit.foreign * rates[c])});
+                                                    setShowCurSelect(false);
+                                                }}>{c}</button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex items-center justify-center text-[11px] font-black text-slate-800">$<input type="number" className="stat-input flex-1 ml-0.5 text-center" value={credit.ntd} onChange={e => updateCredit({...credit, ntd: e.target.value})} /></div>
                             </div>
@@ -254,7 +262,7 @@
 
                     {showModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-                            <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
+                            <div className="bg-white w-full max-md rounded-[40px] p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
                                 <h2 className="text-2xl font-black text-slate-800 mb-6 italic uppercase">{isEditing ? '修改商品' : '新增商品'}</h2>
                                 <div className="space-y-5">
                                     <div className="grid grid-cols-2 gap-4">
