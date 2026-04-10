@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 - 餘額切換進階版</title>
+    <title>LinTin 系統 - 餘額視覺優化版</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -18,7 +18,9 @@
         .field-label { font-size: 10px; font-weight: 900; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
         .field-value { background-color: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 14px; padding: 10px 14px; font-size: 14px; font-weight: 700; color: #1E293B; width: 100%; outline: none; }
         .stat-input { background: transparent; border: none; padding: 0; font-weight: 900; outline: none; width: 100%; }
-        .card-shadow { box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); }
+        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05); }
+        /* 餘額方框專用樣式 */
+        .balance-card { background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); border: 1px solid #99f6e4; }
     </style>
 </head>
 <body>
@@ -46,7 +48,8 @@
                 edit: <path d="M14.06 3.02l.92.92L5.92 13H5v-.92l9.06-9.06M17.66 1c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 15.25V21h5.75L19.81 9.94l-3.75-3.75z" />,
                 trash: <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z" />,
                 user: <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />,
-                chevron: <path d="M7 10l5 5 5-5H7z" />
+                chevron: <path d="M7 10l5 5 5-5H7z" />,
+                wallet: <path d="M21 18l-2 2H5l-2-2V6l2-2h14l2 2v12zm-2-2V8H5v8h14zm-2-5h-2v2h2v-2z" />
             };
             return <svg className={className} viewBox="0 0 24 24" fill="currentColor">{icons[name]}</svg>;
         };
@@ -146,37 +149,47 @@
                             <button onClick={() => { setForm({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款', lastFive: '' }); setIsEditing(null); setShowModal(true); }} className="bg-sky-500 text-white px-5 py-2.5 rounded-full font-black text-sm active-scale shadow-lg">+ 新增商品</button>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 mb-5">
-                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-center relative">
-                                <p className="text-[10px] font-bold text-slate-400 mb-1 uppercase">餘額</p>
-                                <div className="flex items-center justify-center gap-1">
-                                    <input type="number" className="stat-input text-[11px] text-amber-500 w-12 text-center" value={credit.foreign} onChange={e => {
+                        {/* ✅ 優化後的數據卡片區塊 */}
+                        <div className="grid grid-cols-3 gap-3 mb-6">
+                            {/* 優化後的餘額方框 */}
+                            <div className="balance-card p-3 rounded-[24px] shadow-sm relative flex flex-col justify-between">
+                                <div className="flex justify-between items-start mb-1">
+                                    <p className="text-[9px] font-black text-teal-600 uppercase tracking-wider">Balance</p>
+                                    <button onClick={() => setShowCurSelect(!showCurSelect)} className="flex items-center gap-0.5 text-[10px] font-black text-teal-700 bg-white/60 px-2 py-0.5 rounded-full border border-teal-200/50 shadow-sm active-scale">
+                                        {credit.cur} <Icon name="chevron" className="w-2.5 h-2.5" />
+                                    </button>
+                                </div>
+                                <div className="flex flex-col">
+                                    <input type="number" className="stat-input text-sm text-teal-800 font-black w-full" value={credit.foreign} onChange={e => {
                                         const val = e.target.value;
                                         updateCredit({...credit, foreign: val, ntd: Math.round(val * rates[credit.cur])});
                                     }} />
-                                    <button onClick={() => setShowCurSelect(!showCurSelect)} className="flex items-center text-[9px] font-black text-amber-400 bg-amber-50 px-1 rounded">
-                                        {credit.cur} <Icon name="chevron" className="w-2 h-2" />
-                                    </button>
-                                    {showCurSelect && (
-                                        <div className="absolute top-full left-0 w-full bg-white border border-slate-100 shadow-xl rounded-xl z-50 grid grid-cols-3 p-1 gap-1">
-                                            {Object.keys(rates).filter(c=>c!=='NTD').map(c => (
-                                                <button key={c} className="text-[10px] py-1 font-bold hover:bg-slate-50" onClick={() => {
-                                                    updateCredit({...credit, cur: c, ntd: Math.round(credit.foreign * rates[c])});
-                                                    setShowCurSelect(false);
-                                                }}>{c}</button>
-                                            ))}
-                                        </div>
-                                    )}
+                                    <div className="flex items-center text-[11px] font-bold text-teal-600/70">
+                                        $<input type="number" className="stat-input flex-1 ml-0.5 font-bold" value={credit.ntd} onChange={e => updateCredit({...credit, ntd: e.target.value})} />
+                                    </div>
                                 </div>
-                                <div className="flex items-center justify-center text-[11px] font-black text-slate-800">$<input type="number" className="stat-input flex-1 ml-0.5 text-center" value={credit.ntd} onChange={e => updateCredit({...credit, ntd: e.target.value})} /></div>
+                                {showCurSelect && (
+                                    <div className="absolute top-[85%] left-0 w-full bg-white border border-teal-100 shadow-2xl rounded-2xl z-50 overflow-hidden py-1">
+                                        {Object.keys(rates).filter(c=>c!=='NTD').map(c => (
+                                            <button key={c} className="w-full text-[10px] py-2 font-black text-teal-700 hover:bg-teal-50 border-b border-teal-50 last:border-none" onClick={() => {
+                                                updateCredit({...credit, cur: c, ntd: Math.round(credit.foreign * rates[c])});
+                                                setShowCurSelect(false);
+                                            }}>{c}</button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-center">
-                                <p className="text-[10px] font-bold text-slate-400 mb-1 uppercase">待收</p>
-                                <p className="text-xs font-black text-sky-600 mt-1">${stats.pending.toLocaleString()}</p>
+
+                            <div className="bg-white p-3 rounded-[24px] border border-slate-100 shadow-sm text-center flex flex-col justify-between">
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Pending</p>
+                                <p className="text-sm font-black text-sky-600">${stats.pending.toLocaleString()}</p>
+                                <div className="h-4"></div>
                             </div>
-                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-center">
-                                <p className="text-[10px] font-bold text-slate-400 mb-1 uppercase">利潤</p>
-                                <p className="text-xs font-black text-emerald-500 mt-1">${stats.profit.toLocaleString()}</p>
+
+                            <div className="bg-white p-3 rounded-[24px] border border-slate-100 shadow-sm text-center flex flex-col justify-between">
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Profit</p>
+                                <p className="text-sm font-black text-emerald-500">${stats.profit.toLocaleString()}</p>
+                                <div className="h-4"></div>
                             </div>
                         </div>
 
@@ -191,6 +204,7 @@
                     </header>
 
                     <div className="p-4 space-y-5">
+                        {/* 這裡之後的內容保持不變 */}
                         {viewMode === 'purchase' ? (
                             items.filter(i => i.stage === 'purchase' && (activePCat === '全部' || (i.cat || '預設') === activePCat)).map(item => {
                                 const isUnpriced = !item.fPrice || item.fPrice === '0';
@@ -262,7 +276,7 @@
 
                     {showModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-                            <div className="bg-white w-full max-md rounded-[40px] p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
+                            <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
                                 <h2 className="text-2xl font-black text-slate-800 mb-6 italic uppercase">{isEditing ? '修改商品' : '新增商品'}</h2>
                                 <div className="space-y-5">
                                     <div className="grid grid-cols-2 gap-4">
