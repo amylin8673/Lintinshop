@@ -137,8 +137,8 @@
                                         const v = e.target.value;
                                         updateCredit({...credit, foreign: v, ntd: Math.round(v * rates[credit.cur])});
                                     }} />
-                                    <div className="flex items-center justify-center text-[10px] font-black text-teal-600/50">
-                                        $<input type="number" className="stat-input text-center" value={credit.ntd} onChange={e => updateCredit({...credit, ntd: e.target.value})} />
+                                    <div className="flex items-center justify-center text-[10px] font-black text-teal-600/50 leading-none">
+                                        $<input type="number" className="stat-input flex-1 text-center" value={credit.ntd} onChange={e => updateCredit({...credit, ntd: e.target.value})} />
                                     </div>
                                 </div>
                             </div>
@@ -176,7 +176,10 @@
                                         <div className="bg-sky-50/40 p-4 rounded-2xl border border-sky-100/50"><p className="text-[10px] font-black text-sky-400 mb-1.5 leading-none uppercase tracking-wider">商品內容</p><p className="text-sm font-bold text-slate-700 leading-relaxed">{item.product}</p></div>
                                         <div className="flex justify-between items-end pt-2">
                                             <div className="space-y-1">
-                                                <p className="text-2xl font-black text-slate-900">{!item.fPrice || item.fPrice === '0' ? '待定價' : `NT$ ${Number(item.price).toLocaleString()}`}</p>
+                                                {/* 🔴 這裡改成了紅色待定價 */}
+                                                <p className="text-2xl font-black italic">
+                                                    {!item.fPrice || item.fPrice === '0' ? <span className="text-rose-600">待定價</span> : <span className="text-slate-900">NT$ {Number(item.price).toLocaleString()}</span>}
+                                                </p>
                                                 <p className="text-[11px] font-bold text-slate-400 uppercase">{item.fPrice || 0} {item.cur}</p>
                                             </div>
                                             <div className="flex flex-col gap-3">
@@ -191,7 +194,6 @@
                                 </div>
                             ))
                         ) : (
-                            /* 🔹 訂單管理完整顯示區塊 */
                             Object.keys(groupedOrders).map(customer => (
                                 <div key={customer} className="bg-white rounded-[32px] overflow-hidden border border-slate-200 shadow-sm mb-5">
                                     <div className="bg-sky-50/50 px-6 py-5 flex justify-between items-center border-b border-sky-100/50">
