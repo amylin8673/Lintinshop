@@ -19,7 +19,12 @@
         .field-value { background-color: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 14px; padding: 10px 14px; font-size: 14px; font-weight: 700; color: #1E293B; width: 100%; outline: none; }
         .stat-input { background: transparent; border: none; padding: 0; font-weight: 900; outline: none; width: 100%; }
         .card-shadow { box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); }
+        
+        /* 🔹 精緻漸層方框樣式 */
         .balance-box { background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); border: 1px solid #99f6e4; border-radius: 24px; box-shadow: 0 4px 12px rgba(20, 184, 166, 0.1); }
+        .pending-box { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #bae6fd; border-radius: 24px; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1); }
+        .profit-box { background: linear-gradient(135deg, #fffaf5 0%, #ffedd5 100%); border: 1px solid #fed7aa; border-radius: 24px; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.1); }
+        
         .currency-tag { appearance: none; background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(20, 184, 166, 0.3); padding: 1px 8px; border-radius: 99px; font-size: 9px; font-weight: 900; color: #0d9488; outline: none; }
     </style>
 </head>
@@ -121,10 +126,11 @@
                             <button onClick={() => { setForm({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款', lastFive: '' }); setIsEditing(null); setShowModal(true); }} className="bg-sky-500 text-white px-5 py-2.5 rounded-full font-black text-sm active-scale shadow-lg">+ 新增商品</button>
                         </div>
 
+                        {/* 🔹 更新後的三個漸層方框 */}
                         <div className="grid grid-cols-3 gap-2 mb-5">
-                            <div className="balance-box p-3 text-center flex flex-col justify-between">
+                            <div className="balance-box p-3 text-center flex flex-col justify-between min-h-[75px]">
                                 <div className="flex justify-between items-center px-0.5 mb-1">
-                                    <p className="text-[9px] font-bold text-teal-500 uppercase">餘額</p>
+                                    <p className="text-[9px] font-bold text-teal-600 uppercase">餘額</p>
                                     <select className="currency-tag" value={credit.cur} onChange={e => {
                                         const c = e.target.value;
                                         updateCredit({...credit, cur: c, ntd: Math.round(credit.foreign * rates[c])});
@@ -142,13 +148,19 @@
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-center">
-                                <p className="text-[10px] font-bold text-slate-400 mb-1 uppercase">待收</p>
-                                <p className="text-xs font-black text-sky-600 mt-1">${stats.pending.toLocaleString()}</p>
+                            <div className="pending-box p-3 text-center flex flex-col justify-between min-h-[75px]">
+                                <p className="text-[9px] font-bold text-sky-600 uppercase">待收</p>
+                                <div className="pb-1">
+                                    <p className="text-[13px] font-black text-sky-700">${stats.pending.toLocaleString()}</p>
+                                    <p className="text-[8px] font-black text-sky-400 leading-none">RECEIVABLE</p>
+                                </div>
                             </div>
-                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-center">
-                                <p className="text-[10px] font-bold text-slate-400 mb-1 uppercase">利潤</p>
-                                <p className="text-xs font-black text-emerald-500 mt-1">${stats.profit.toLocaleString()}</p>
+                            <div className="profit-box p-3 text-center flex flex-col justify-between min-h-[75px]">
+                                <p className="text-[9px] font-bold text-orange-600 uppercase">利潤</p>
+                                <div className="pb-1">
+                                    <p className="text-[13px] font-black text-orange-700">${stats.profit.toLocaleString()}</p>
+                                    <p className="text-[8px] font-black text-orange-400 leading-none">PROFIT</p>
+                                </div>
                             </div>
                         </div>
 
@@ -176,7 +188,6 @@
                                         <div className="bg-sky-50/40 p-4 rounded-2xl border border-sky-100/50"><p className="text-[10px] font-black text-sky-400 mb-1.5 leading-none uppercase tracking-wider">商品內容</p><p className="text-sm font-bold text-slate-700 leading-relaxed">{item.product}</p></div>
                                         <div className="flex justify-between items-end pt-2">
                                             <div className="space-y-1">
-                                                {/* 🔴 這裡改成了紅色待定價 */}
                                                 <p className="text-2xl font-black italic">
                                                     {!item.fPrice || item.fPrice === '0' ? <span className="text-rose-600">待定價</span> : <span className="text-slate-900">NT$ {Number(item.price).toLocaleString()}</span>}
                                                 </p>
@@ -249,7 +260,7 @@
 
                     {showModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-                            <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
+                            <div className="bg-white w-full max-md rounded-[40px] p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
                                 <h2 className="text-2xl font-black text-slate-800 mb-6 italic uppercase">{isEditing ? '修改商品' : '新增商品'}</h2>
                                 <div className="space-y-5">
                                     <div className="grid grid-cols-2 gap-4">
