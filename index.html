@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 - 雲端即時同步</title>
+    <title>LinTin 系統 - 全功能同步版</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -18,7 +18,6 @@
         .field-label { font-size: 10px; font-weight: 900; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
         .field-value { background-color: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 14px; padding: 10px 14px; font-size: 14px; font-weight: 700; color: #1E293B; width: 100%; outline: none; }
         .stat-input { background: transparent; border: none; padding: 0; font-weight: 900; outline: none; width: 100%; }
-        .currency-select { background: #FEF3C7; color: #D97706; font-size: 10px; font-weight: 900; padding: 1px 4px; border-radius: 4px; border: none; outline: none; appearance: none; cursor: pointer; }
         .card-shadow { box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); }
     </style>
 </head>
@@ -26,7 +25,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // ✅ 已填入你的專屬 Firebase 配置
+        // ✅ 沿用你的 Firebase 配置
         const firebaseConfig = {
             apiKey: "AIzaSyCK50TNqgRnXna4fd7x34rnslCfIVotZY4",
             authDomain: "lintin-9aecb.firebaseapp.com",
@@ -37,7 +36,6 @@
             appId: "1:165541009067:web:b9fa7208c7d969f8fb09ee"
         };
 
-        // 初始化
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
@@ -48,8 +46,7 @@
                 box: <path d="M21 8l-2-2H5L3 8v11a2 2 0 002 2h14a2 2 0 002-2V8zM5 8l1.5-1.5h11L19 8H5zm14 11H5V10h14v9zM9 12h6v2H9v-2z" />,
                 edit: <path d="M14.06 3.02l.92.92L5.92 13H5v-.92l9.06-9.06M17.66 1c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 15.25V21h5.75L19.81 9.94l-3.75-3.75z" />,
                 trash: <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z" />,
-                user: <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />,
-                refresh: <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                user: <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
             };
             return <svg className={className} viewBox="0 0 24 24" fill="currentColor">{icons[name]}</svg>;
         };
@@ -67,22 +64,15 @@
             const [bankData, setBankData] = useState({ customer: '', lastFive: '' });
             const [form, setForm] = useState({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款', lastFive: '' });
 
-            // 🟢 即時連線核心
             useEffect(() => {
                 const itemsRef = db.ref('items');
                 const creditRef = db.ref('credit');
-
-                // 監聽雲端資料變動
                 itemsRef.on('value', (snapshot) => {
                     const data = snapshot.val();
                     const list = data ? Object.keys(data).map(key => ({...data[key], id: key})) : [];
                     setItems(list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)));
                 });
-
-                creditRef.on('value', (snapshot) => {
-                    if (snapshot.val()) setCredit(snapshot.val());
-                });
-
+                creditRef.on('value', (snapshot) => { if (snapshot.val()) setCredit(snapshot.val()); });
                 return () => { itemsRef.off(); creditRef.off(); };
             }, []);
 
@@ -138,7 +128,7 @@
 
                         <div className="grid grid-cols-3 gap-2 mb-5">
                             <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
-                                <p className="text-[10px] font-bold text-slate-400 mb-1 flex justify-between uppercase">餘額</p>
+                                <p className="text-[10px] font-bold text-slate-400 mb-1 uppercase">餘額</p>
                                 <div className="flex items-center gap-1">
                                     <input type="number" className="stat-input text-[11px] text-amber-500 w-12" value={credit.foreign} onChange={e => updateCredit({...credit, foreign: e.target.value})} />
                                     <span className="text-[9px] font-black text-amber-400">{credit.cur}</span>
@@ -178,7 +168,6 @@
                                             <div className="bg-sky-50/40 p-4 rounded-2xl border border-sky-100/50"><p className="text-[10px] font-black text-sky-400 mb-1.5 leading-none uppercase tracking-wider">商品內容</p><p className="text-sm font-bold text-slate-700 leading-relaxed">{item.product}</p></div>
                                             <div className="flex justify-between items-end pt-2">
                                                 <div className="space-y-1">
-                                                    {item.fee > 0 && <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div><span className="text-emerald-500 text-[10px] font-black uppercase">利潤 +${Number(item.fee).toLocaleString()}</span></div>}
                                                     <p className={`text-2xl font-black ${isUnpriced ? 'text-rose-400 italic' : 'text-slate-900'}`}>{isUnpriced ? '待定價' : `NT$ ${Number(item.price).toLocaleString()}`}</p>
                                                     <p className="text-[11px] font-bold text-slate-400 uppercase">{item.fPrice || 0} {item.cur}</p>
                                                 </div>
@@ -211,7 +200,11 @@
                                         {groupedOrders[customer].items.map(item => (
                                             <div key={item.id} className="bg-slate-50/40 p-4 rounded-2xl flex justify-between items-center">
                                                 <div className="flex-1"><span className="text-[9px] font-black text-slate-400 uppercase">#{item.cat}</span><p className="text-xs font-black text-slate-700">{item.product}</p><p className="text-[10px] font-bold text-slate-400">NT$ {Number(item.price).toLocaleString()} / {item.fPrice} {item.cur}</p></div>
-                                                <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="text-slate-300 ml-4"><Icon name="edit" className="w-3.5 h-3.5" /></button>
+                                                {/* ✅ 訂單管理現在同時擁有編輯與刪除功能 */}
+                                                <div className="flex gap-2">
+                                                    <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="text-slate-300 p-2 active-scale"><Icon name="edit" className="w-4 h-4" /></button>
+                                                    <button onClick={() => handleDelete(item.id)} className="text-rose-200 p-2 active-scale"><Icon name="trash" className="w-4 h-4" /></button>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -258,7 +251,7 @@
                                             }} /></div>
                                             <div><p className="text-[9px] font-black text-sky-500 mb-1 ml-1">台幣成本</p><input type="number" className="field-value border-none text-sky-600 font-bold bg-white" value={form.price} onChange={e => setForm({...form, price: e.target.value})} /></div>
                                         </div>
-                                        <div><p className="text-[9px] font-black text-emerald-500 mb-1 ml-1">預期利潤 (手動填寫)</p><input type="number" className="field-value border-none text-emerald-600 font-bold bg-white" value={form.fee} onChange={e => setForm({...form, fee: e.target.value})} /></div>
+                                        <div><p className="text-[9px] font-black text-emerald-500 mb-1 ml-1">利潤</p><input type="number" className="field-value border-none text-emerald-600 font-bold bg-white" value={form.fee} onChange={e => setForm({...form, fee: e.target.value})} /></div>
                                     </div>
                                     <div className="flex gap-4 pt-4">
                                         <button onClick={() => setShowModal(false)} className="flex-1 bg-slate-100 text-slate-400 py-4 rounded-[20px] font-black">取消</button>
