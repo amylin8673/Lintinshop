@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 v37.20</title>
+    <title>LinTin 系統 - 雲端即時同步</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -17,8 +19,6 @@
         .field-value { background-color: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 14px; padding: 10px 14px; font-size: 14px; font-weight: 700; color: #1E293B; width: 100%; outline: none; }
         .stat-input { background: transparent; border: none; padding: 0; font-weight: 900; outline: none; width: 100%; }
         .currency-select { background: #FEF3C7; color: #D97706; font-size: 10px; font-weight: 900; padding: 1px 4px; border-radius: 4px; border: none; outline: none; appearance: none; cursor: pointer; }
-        @keyframes pulse-slow { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .animate-pulse-slow { animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
         .card-shadow { box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); }
     </style>
 </head>
@@ -26,6 +26,21 @@
     <div id="root"></div>
 
     <script type="text/babel">
+        // ✅ 已填入你的專屬 Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyCK50TNqgRnXna4fd7x34rnslCfIVotZY4",
+            authDomain: "lintin-9aecb.firebaseapp.com",
+            databaseURL: "https://lintin-9aecb-default-rtdb.firebaseio.com",
+            projectId: "lintin-9aecb",
+            storageBucket: "lintin-9aecb.firebasestorage.app",
+            messagingSenderId: "165541009067",
+            appId: "1:165541009067:web:b9fa7208c7d969f8fb09ee"
+        };
+
+        // 初始化
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         const { useState, useEffect, useMemo } = React;
 
         const Icon = ({ name, className = "w-4 h-4" }) => {
@@ -40,10 +55,9 @@
         };
 
         const App = () => {
-            const [items, setItems] = useState(() => JSON.parse(localStorage.getItem('lt_items')) || []);
-            const [credit, setCredit] = useState(() => JSON.parse(localStorage.getItem('lt_credit')) || { ntd: 0, foreign: 0, cur: 'KRW' });
+            const [items, setItems] = useState([]);
+            const [credit, setCredit] = useState({ ntd: 0, foreign: 0, cur: 'KRW' });
             const [rates, setRates] = useState({ KRW: 0.0215, JPY: 0.1997, THB: 0.9, HKD: 4.1, AUD: 22.3, USD: 32.5, NTD: 1 });
-            const [isSyncing, setIsSyncing] = useState(false);
             const [viewMode, setViewMode] = useState('purchase'); 
             const [activePCat, setActivePCat] = useState('全部');
             const [activeStatus, setActiveStatus] = useState('全部');
@@ -53,46 +67,42 @@
             const [bankData, setBankData] = useState({ customer: '', lastFive: '' });
             const [form, setForm] = useState({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款', lastFive: '' });
 
+            // 🟢 即時連線核心
+            useEffect(() => {
+                const itemsRef = db.ref('items');
+                const creditRef = db.ref('credit');
+
+                // 監聽雲端資料變動
+                itemsRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    const list = data ? Object.keys(data).map(key => ({...data[key], id: key})) : [];
+                    setItems(list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)));
+                });
+
+                creditRef.on('value', (snapshot) => {
+                    if (snapshot.val()) setCredit(snapshot.val());
+                });
+
+                return () => { itemsRef.off(); creditRef.off(); };
+            }, []);
+
+            const handleSave = (itemData) => {
+                if (isEditing) {
+                    db.ref(`items/${isEditing}`).set({ ...itemData, timestamp: Date.now() });
+                } else {
+                    db.ref('items').push({ ...itemData, timestamp: Date.now(), stage: viewMode });
+                }
+                setShowModal(false);
+            };
+
+            const handleDelete = (id) => { if(confirm('確定刪除商品？')) db.ref(`items/${id}`).remove(); };
+            const moveToOrder = (id) => { db.ref(`items/${id}`).update({ stage: 'order', orderStatus: '待付款' }); };
+            const updateCredit = (newCredit) => { db.ref('credit').set(newCredit); };
+
             const categories = useMemo(() => {
                 const allCats = items.filter(i => i.stage === 'purchase').map(i => i.cat || '預設');
                 return ['全部', ...new Set(allCats)];
             }, [items]);
-
-            const fetchRates = async () => {
-                setIsSyncing(true);
-                try {
-                    const res = await fetch('https://api.frankfurter.dev/v1/latest?base=TWD');
-                    const data = await res.json();
-                    if (data && data.rates) {
-                        const newRates = { ...rates };
-                        Object.keys(data.rates).forEach(cur => {
-                            if (newRates[cur] !== undefined) newRates[cur] = parseFloat((1 / data.rates[cur]).toFixed(4));
-                        });
-                        setRates(newRates);
-                    }
-                } catch (err) { console.error(err); } finally { setIsSyncing(false); }
-            };
-
-            useEffect(() => { fetchRates(); }, []);
-            useEffect(() => { localStorage.setItem('lt_items', JSON.stringify(items)); }, [items]);
-            useEffect(() => { localStorage.setItem('lt_credit', JSON.stringify(credit)); }, [credit]);
-
-            const handleFPriceChange = (val) => {
-                const fPrice = val;
-                if (!fPrice || fPrice === '0' || fPrice === '') {
-                    setForm({ ...form, fPrice, price: '' });
-                    return;
-                }
-                const rate = rates[form.cur] || 1;
-                const ntdPrice = Math.round(fPrice * rate); 
-                setForm({ ...form, fPrice, price: ntdPrice });
-            };
-
-            const updateCustomerStatus = (customerName, newStatus, lastFiveVal = null) => {
-                const finalStatus = lastFiveVal ? '待查帳' : newStatus;
-                setItems(prev => prev.map(item => (item.customer === customerName && item.stage === 'order') ? { ...item, orderStatus: finalStatus, lastFive: lastFiveVal !== null ? lastFiveVal : item.lastFive } : item));
-                setShowBankModal(false);
-            };
 
             const groupedOrders = useMemo(() => {
                 const allOrders = items.filter(i => i.stage === 'order');
@@ -117,34 +127,30 @@
 
             return (
                 <div className="min-h-screen pb-10 text-slate-900">
-                    <header className="bg-white sticky top-0 z-40 border-b border-slate-100 p-5 text-left">
+                    <header className="bg-white sticky top-0 z-40 border-b border-slate-100 p-5">
                         <div className="flex justify-between items-center mb-5">
                             <div className="flex items-center gap-2">
                                 <div className="bg-sky-500 p-2 rounded-xl text-white shadow-md"><Icon name="box" /></div>
-                                <h1 className="text-xl font-black italic tracking-tighter text-sky-600">LinTin</h1>
+                                <h1 className="text-xl font-black italic tracking-tighter text-sky-600 uppercase">LinTin</h1>
                             </div>
-                            <button onClick={() => { setForm({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款', lastFive: '' }); setIsEditing(null); setShowModal(true); }} className="bg-sky-500 text-white px-5 py-2.5 rounded-full font-black text-sm active-scale shadow-lg">+ 新增項目</button>
+                            <button onClick={() => { setForm({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款', lastFive: '' }); setIsEditing(null); setShowModal(true); }} className="bg-sky-500 text-white px-5 py-2.5 rounded-full font-black text-sm active-scale shadow-lg">+ 新增商品</button>
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 mb-5">
-                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm relative">
-                                <p className="text-[10px] font-bold text-slate-400 mb-1 flex justify-between items-center">
-                                    庫存餘額 <button onClick={fetchRates} className={isSyncing ? 'animate-spin text-sky-500' : 'text-slate-300'}><Icon name="refresh" className="w-2.5 h-2.5" /></button>
-                                </p>
+                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
+                                <p className="text-[10px] font-bold text-slate-400 mb-1 flex justify-between uppercase">餘額</p>
                                 <div className="flex items-center gap-1">
-                                    <input type="number" className="stat-input text-[11px] text-amber-500 w-12" value={credit.foreign} onChange={e => setCredit({...credit, foreign: e.target.value})} />
-                                    <select className="currency-select" value={credit.cur} onChange={e => setCredit({...credit, cur: e.target.value})}>
-                                        {Object.keys(rates).filter(c => c !== 'NTD').map(c => <option key={c} value={c}>{c}</option>)}
-                                    </select>
+                                    <input type="number" className="stat-input text-[11px] text-amber-500 w-12" value={credit.foreign} onChange={e => updateCredit({...credit, foreign: e.target.value})} />
+                                    <span className="text-[9px] font-black text-amber-400">{credit.cur}</span>
                                 </div>
-                                <div className="flex items-center text-[11px] font-black text-slate-800">$<input type="number" className="stat-input flex-1 ml-0.5" value={credit.ntd} onChange={e => setCredit({...credit, ntd: e.target.value})} /></div>
+                                <div className="flex items-center text-[11px] font-black text-slate-800">$<input type="number" className="stat-input flex-1 ml-0.5" value={credit.ntd} onChange={e => updateCredit({...credit, ntd: e.target.value})} /></div>
                             </div>
                             <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
-                                <p className="text-[10px] font-bold text-slate-400 mb-1">待收金額</p>
+                                <p className="text-[10px] font-bold text-slate-400 mb-1 uppercase">待收</p>
                                 <p className="text-xs font-black text-sky-600 mt-1">${stats.pending.toLocaleString()}</p>
                             </div>
                             <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
-                                <p className="text-[10px] font-bold text-slate-400 mb-1">利潤統計</p>
+                                <p className="text-[10px] font-bold text-slate-400 mb-1 uppercase">利潤</p>
                                 <p className="text-xs font-black text-emerald-500 mt-1">${stats.profit.toLocaleString()}</p>
                             </div>
                         </div>
@@ -155,82 +161,30 @@
                         </div>
 
                         <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
-                            {viewMode === 'purchase' ? (
-                                categories.map(c => (
-                                    <button 
-                                        key={c} 
-                                        onClick={() => setActivePCat(c)} 
-                                        className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap transition-all ${activePCat === c ? 'bg-sky-500 text-white' : 'bg-slate-100 text-slate-500'}`}
-                                    >
-                                        {c}
-                                    </button>
-                                ))
-                            ) : (
-                                orderStatuses.map(s => <button key={s} onClick={() => setActiveStatus(s)} className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap ${activeStatus === s ? 'bg-sky-700 text-white' : 'bg-slate-100 text-slate-500'}`}>{s}</button>)
-                            )}
+                            {viewMode === 'purchase' ? categories.map(c => <button key={c} onClick={() => setActivePCat(c)} className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap transition-all ${activePCat === c ? 'bg-sky-500 text-white' : 'bg-slate-100 text-slate-500'}`}>{c}</button>) : orderStatuses.map(s => <button key={s} onClick={() => setActiveStatus(s)} className={`px-5 py-2 rounded-full text-[11px] font-black whitespace-nowrap ${activeStatus === s ? 'bg-sky-700 text-white' : 'bg-slate-100 text-slate-500'}`}>{s}</button>)}
                         </div>
                     </header>
 
-                    <div className="p-4 space-y-5 text-left">
+                    <div className="p-4 space-y-5">
                         {viewMode === 'purchase' ? (
                             items.filter(i => i.stage === 'purchase' && (activePCat === '全部' || (i.cat || '預設') === activePCat)).map(item => {
-                                const isUnpriced = !item.fPrice || item.fPrice === '0' || item.fPrice === '';
+                                const isUnpriced = !item.fPrice || item.fPrice === '0';
                                 return (
-                                    <div key={item.id} className={`bg-white rounded-[32px] p-6 card-shadow border transition-all relative ${isUnpriced ? 'border-rose-100 bg-rose-50/10' : 'border-slate-100'}`}>
-                                        <div className="absolute top-4 left-6">
-                                            <span className="bg-slate-50 text-slate-400 px-3 py-1 rounded-full text-[9px] font-black tracking-widest border border-slate-100 shadow-sm uppercase">
-                                                #{item.cat || '預設'}
-                                            </span>
-                                        </div>
-                                        <div className={`absolute top-4 right-5 px-3 py-1.5 rounded-full text-[10px] font-black text-white shadow-sm ${item.payer === '璇' ? 'bg-sky-400' : item.payer === '琳' ? 'bg-cyan-400' : 'bg-slate-300'}`}>
-                                            {item.payer}
-                                        </div>
-
+                                    <div key={item.id} className="bg-white rounded-[32px] p-6 card-shadow border border-slate-100 relative">
+                                        <div className="absolute top-4 left-6"><span className="bg-slate-50 text-slate-400 px-3 py-1 rounded-full text-[9px] font-black tracking-widest border border-slate-100 uppercase">#{item.cat}</span></div>
+                                        <div className={`absolute top-4 right-5 px-3 py-1.5 rounded-full text-[10px] font-black text-white shadow-sm ${item.payer === '璇' ? 'bg-sky-400' : item.payer === '琳' ? 'bg-cyan-400' : 'bg-slate-300'}`}>{item.payer}</div>
                                         <div className="mt-8 space-y-4">
-                                            <div className="flex items-start gap-3">
-                                                <div className="bg-sky-50 text-sky-500 p-2.5 rounded-2xl">
-                                                    <Icon name="user" className="w-5 h-5" />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="text-[10px] font-black text-slate-400 leading-none mb-1">CUSTOMER</p>
-                                                    <h3 className="text-base font-black text-slate-800">{item.customer}</h3>
-                                                </div>
-                                            </div>
-
-                                            <div className="bg-sky-50/40 p-4 rounded-2xl border border-sky-100/50">
-                                                <p className="text-[10px] font-black text-sky-400 leading-none mb-1.5 uppercase tracking-wider">Product Item</p>
-                                                <p className="text-sm font-bold text-slate-700 leading-relaxed">{item.product}</p>
-                                            </div>
-
+                                            <div className="flex items-start gap-3"><div className="bg-sky-50 text-sky-500 p-2.5 rounded-2xl"><Icon name="user" /></div><div className="flex-1"><p className="text-[10px] font-black text-slate-400 mb-1 leading-none uppercase">客戶</p><h3 className="text-base font-black text-slate-800">{item.customer}</h3></div></div>
+                                            <div className="bg-sky-50/40 p-4 rounded-2xl border border-sky-100/50"><p className="text-[10px] font-black text-sky-400 mb-1.5 leading-none uppercase tracking-wider">商品內容</p><p className="text-sm font-bold text-slate-700 leading-relaxed">{item.product}</p></div>
                                             <div className="flex justify-between items-end pt-2">
                                                 <div className="space-y-1">
-                                                    {!isUnpriced && item.fee > 0 && (
-                                                        <div className="flex items-center gap-1.5">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
-                                                            <span className="text-emerald-500 text-[10px] font-black uppercase">Profit +${Number(item.fee).toLocaleString()}</span>
-                                                        </div>
-                                                    )}
-                                                    <p className={`text-2xl font-black ${isUnpriced ? 'text-rose-400 italic text-xl' : 'text-slate-900'}`}>
-                                                        {isUnpriced ? '待定價' : `NT$ ${Number(item.price).toLocaleString()}`}
-                                                    </p>
-                                                    {!isUnpriced && (
-                                                        <p className="text-[11px] font-bold text-slate-400 uppercase">
-                                                            {Number(item.fPrice).toLocaleString()} {item.cur}
-                                                        </p>
-                                                    )}
+                                                    {item.fee > 0 && <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div><span className="text-emerald-500 text-[10px] font-black uppercase">利潤 +${Number(item.fee).toLocaleString()}</span></div>}
+                                                    <p className={`text-2xl font-black ${isUnpriced ? 'text-rose-400 italic' : 'text-slate-900'}`}>{isUnpriced ? '待定價' : `NT$ ${Number(item.price).toLocaleString()}`}</p>
+                                                    <p className="text-[11px] font-bold text-slate-400 uppercase">{item.fPrice || 0} {item.cur}</p>
                                                 </div>
                                                 <div className="flex flex-col gap-3">
-                                                    <div className="flex gap-2 self-end">
-                                                        <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="p-2.5 bg-slate-100 text-slate-400 rounded-xl active-scale transition-colors hover:bg-slate-200"><Icon name="edit" className="w-3.5 h-3.5" /></button>
-                                                        <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2.5 bg-rose-50 text-rose-300 rounded-xl active-scale transition-colors hover:bg-rose-100"><Icon name="trash" className="w-3.5 h-3.5" /></button>
-                                                    </div>
-                                                    <button 
-                                                        disabled={isUnpriced}
-                                                        onClick={() => setItems(items.map(i => i.id === item.id ? {...i, stage:'order', orderStatus:'待付款'} : i))} 
-                                                        className={`px-6 py-3 rounded-2xl font-black text-[11px] active-scale shadow-lg transition-all ${isUnpriced ? 'bg-slate-100 text-slate-300 cursor-not-allowed shadow-none' : 'bg-sky-500 text-white hover:bg-sky-600'}`}
-                                                    >
-                                                        完成採購
-                                                    </button>
+                                                    <div className="flex gap-2 self-end"><button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="p-2.5 bg-slate-100 text-slate-400 rounded-xl"><Icon name="edit" /></button><button onClick={() => handleDelete(item.id)} className="p-2.5 bg-rose-50 text-rose-300 rounded-xl"><Icon name="trash" /></button></div>
+                                                    <button onClick={() => moveToOrder(item.id)} className="px-6 py-3 bg-sky-500 text-white rounded-2xl font-black text-[11px] active-scale shadow-lg">完成採購</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -241,12 +195,13 @@
                             Object.keys(groupedOrders).map(customer => (
                                 <div key={customer} className="bg-white rounded-[32px] overflow-hidden border border-slate-200 shadow-sm mb-4">
                                     <div className="bg-sky-50/50 px-6 py-5 flex justify-between items-center border-b border-sky-100/50">
-                                        <div className="flex items-center gap-2">
-                                            <div className="bg-sky-600 p-1.5 rounded-lg text-white"><Icon name="user" className="w-3.5 h-3.5" /></div>
-                                            <div><span className="font-black text-sky-900 text-sm block leading-none">{customer}</span>{groupedOrders[customer].lastFive && <span className="text-[10px] font-bold text-sky-600">末五碼：{groupedOrders[customer].lastFive}</span>}</div>
-                                        </div>
+                                        <div className="flex items-center gap-2"><div className="bg-sky-600 p-1.5 rounded-lg text-white"><Icon name="user" className="w-3.5 h-3.5" /></div><div><span className="font-black text-sky-900 text-sm block leading-none">{customer}</span>{groupedOrders[customer].lastFive && <span className="text-[10px] font-bold text-sky-600">末五碼：{groupedOrders[customer].lastFive}</span>}</div></div>
                                         <div className="flex flex-col items-end gap-2">
-                                            <select className={`px-4 py-2 rounded-xl text-[11px] font-black outline-none text-white shadow-md ${groupedOrders[customer].status === '待查帳' ? 'bg-amber-500' : groupedOrders[customer].status === '完成' ? 'bg-emerald-500' : 'bg-sky-600'}`} value={groupedOrders[customer].status} onChange={e => { if(e.target.value==='已匯款') { setBankData({customer, lastFive:''}); setShowBankModal(true); } else updateCustomerStatus(customer, e.target.value); }}>
+                                            <select className={`px-4 py-2 rounded-xl text-[11px] font-black text-white shadow-md ${groupedOrders[customer].status === '待查帳' ? 'bg-amber-500' : groupedOrders[customer].status === '完成' ? 'bg-emerald-500' : 'bg-sky-600'}`} value={groupedOrders[customer].status} onChange={e => {
+                                                const newStatus = e.target.value;
+                                                if(newStatus === '已匯款') { setBankData({customer, lastFive:''}); setShowBankModal(true); } 
+                                                else { items.filter(i => i.customer === customer && i.stage === 'order').forEach(item => db.ref(`items/${item.id}`).update({orderStatus: newStatus})); }
+                                            }}>
                                                 {orderStatuses.filter(s => s !== '全部').map(s => <option key={s} value={s}>{s}</option>)}
                                             </select>
                                             <p className="text-sm font-black text-sky-700">NT$ {groupedOrders[customer].total.toLocaleString()}</p>
@@ -255,12 +210,8 @@
                                     <div className="p-4 space-y-2 bg-white">
                                         {groupedOrders[customer].items.map(item => (
                                             <div key={item.id} className="bg-slate-50/40 p-4 rounded-2xl flex justify-between items-center">
-                                                <div className="flex-1">
-                                                    <span className="text-[9px] font-black text-slate-400 uppercase">#{item.cat}</span>
-                                                    <p className="text-xs font-black text-slate-700">{item.product}</p>
-                                                    <p className="text-[10px] font-bold text-slate-400">{item.price ? `NT$ ${Number(item.price).toLocaleString()}` : '未定價'} / {item.fPrice || 0} {item.cur}</p>
-                                                </div>
-                                                <div className="flex gap-4 ml-4"><button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="text-slate-300"><Icon name="edit" className="w-3.5 h-3.5" /></button></div>
+                                                <div className="flex-1"><span className="text-[9px] font-black text-slate-400 uppercase">#{item.cat}</span><p className="text-xs font-black text-slate-700">{item.product}</p><p className="text-[10px] font-bold text-slate-400">NT$ {Number(item.price).toLocaleString()} / {item.fPrice} {item.cur}</p></div>
+                                                <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="text-slate-300 ml-4"><Icon name="edit" className="w-3.5 h-3.5" /></button>
                                             </div>
                                         ))}
                                     </div>
@@ -272,51 +223,46 @@
                     {showBankModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
                             <div className="bg-white w-full max-w-xs rounded-[32px] p-8 shadow-2xl text-center">
-                                <h3 className="text-lg font-black text-slate-800 mb-4">輸入末五碼</h3>
-                                <input autoFocus type="tel" maxLength="5" className="w-full field-value text-center text-2xl tracking-widest outline-none mb-6" value={bankData.lastFive} onChange={e => setBankData({...bankData, lastFive: e.target.value})} />
-                                <div className="flex gap-3"><button onClick={() => setShowBankModal(false)} className="flex-1 bg-slate-100 text-slate-400 py-3 rounded-xl font-black">取消</button><button onClick={() => updateCustomerStatus(bankData.customer, '已匯款', bankData.lastFive)} className="flex-1 bg-sky-500 text-white py-3 rounded-xl font-black">確認查帳</button></div>
+                                <h3 className="text-lg font-black text-slate-800 mb-4 uppercase">輸入末五碼</h3>
+                                <input autoFocus type="tel" maxLength="5" className="w-full field-value text-center text-2xl tracking-widest mb-6" value={bankData.lastFive} onChange={e => setBankData({...bankData, lastFive: e.target.value})} />
+                                <div className="flex gap-3"><button onClick={() => setShowBankModal(false)} className="flex-1 bg-slate-100 text-slate-400 py-3 rounded-xl font-black">取消</button><button onClick={() => {
+                                    items.filter(i => i.customer === bankData.customer && i.stage === 'order').forEach(item => db.ref(`items/${item.id}`).update({orderStatus: '待查帳', lastFive: bankData.lastFive}));
+                                    setShowBankModal(false);
+                                }} className="flex-1 bg-sky-500 text-white py-3 rounded-xl font-black">確認查帳</button></div>
                             </div>
                         </div>
                     )}
 
                     {showModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 text-left">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
                             <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
-                                <h2 className="text-2xl font-black text-slate-800 mb-6 italic">{isEditing ? 'Edit Item' : 'New Item'}</h2>
+                                <h2 className="text-2xl font-black text-slate-800 mb-6 italic uppercase">{isEditing ? '修改商品' : '新增商品'}</h2>
                                 <div className="space-y-5">
-                                    <div><p className="field-label">分類 Tag</p><input className="field-value" value={form.cat} onChange={e => setForm({...form, cat: e.target.value})} /></div>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div><p className="field-label">客戶 Client</p><input className="field-value" value={form.customer} onChange={e => setForm({...form, customer: e.target.value})} /></div>
+                                        <div><p className="field-label">分類 Tag</p><input className="field-value" value={form.cat} onChange={e => setForm({...form, cat: e.target.value})} /></div>
                                         <div><p className="field-label">支付 Payer</p><div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
                                             {['琳', '璇', '無'].map(p => <button key={p} onClick={() => setForm({...form, payer: p})} className={`flex-1 py-2 rounded-lg text-[10px] font-black ${form.payer === p ? 'bg-white shadow-sm' : 'text-slate-400'}`}>{p}</button>)}
                                         </div></div>
                                     </div>
-                                    <div><p className="field-label">商品 Product</p><input className="field-value" value={form.product} onChange={e => setForm({...form, product: e.target.value})} /></div>
-                                    
-                                    {/* 金額區塊標籤優化 */}
+                                    <div><p className="field-label">客戶 Client</p><input className="field-value" value={form.customer} onChange={e => setForm({...form, customer: e.target.value})} /></div>
+                                    <div><p className="field-label">商品內容 Product</p><input className="field-value" value={form.product} onChange={e => setForm({...form, product: e.target.value})} /></div>
                                     <div className="bg-slate-50 p-5 rounded-[28px] space-y-4 shadow-inner border border-slate-100">
                                         <div className="grid grid-cols-5 gap-1">
                                             {Object.keys(rates).map(c => <button key={c} onClick={() => setForm({...form, cur: c})} className={`py-2 rounded-lg text-[10px] font-black border transition-all ${form.cur === c ? 'bg-sky-500 border-sky-600 text-white' : 'bg-white text-slate-400'}`}>{c}</button>)}
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <p className="text-[9px] font-black text-amber-500 mb-1 ml-1 uppercase">外幣單價</p>
-                                                <input type="number" className="field-value border-none text-amber-600 font-bold bg-white" value={form.fPrice} onChange={e => handleFPriceChange(e.target.value)} />
-                                            </div>
-                                            <div>
-                                                <p className="text-[9px] font-black text-sky-500 mb-1 ml-1 uppercase">台幣成本</p>
-                                                <input type="number" className="field-value border-none text-sky-600 font-bold bg-white" value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
-                                            </div>
+                                            <div><p className="text-[9px] font-black text-amber-500 mb-1 ml-1">外幣單價</p><input type="number" className="field-value border-none text-amber-600 font-bold bg-white" value={form.fPrice} onChange={e => {
+                                                const fPrice = e.target.value;
+                                                const rate = rates[form.cur] || 1;
+                                                setForm({ ...form, fPrice, price: fPrice ? Math.round(fPrice * rate) : '' });
+                                            }} /></div>
+                                            <div><p className="text-[9px] font-black text-sky-500 mb-1 ml-1">台幣成本</p><input type="number" className="field-value border-none text-sky-600 font-bold bg-white" value={form.price} onChange={e => setForm({...form, price: e.target.value})} /></div>
                                         </div>
-                                        <div>
-                                            <p className="text-[9px] font-black text-emerald-500 mb-1 ml-1 uppercase">預期利潤</p>
-                                            <input type="number" className="field-value border-none text-emerald-600 font-bold bg-white" value={form.fee} onChange={e => setForm({...form, fee: e.target.value})} />
-                                        </div>
+                                        <div><p className="text-[9px] font-black text-emerald-500 mb-1 ml-1">預期利潤 (手動填寫)</p><input type="number" className="field-value border-none text-emerald-600 font-bold bg-white" value={form.fee} onChange={e => setForm({...form, fee: e.target.value})} /></div>
                                     </div>
-
                                     <div className="flex gap-4 pt-4">
                                         <button onClick={() => setShowModal(false)} className="flex-1 bg-slate-100 text-slate-400 py-4 rounded-[20px] font-black">取消</button>
-                                        <button onClick={() => { if (isEditing) setItems(items.map(i => i.id === isEditing ? {...form, id: isEditing} : i)); else setItems([{...form, id: Date.now(), stage: viewMode}, ...items]); setShowModal(false); }} className="flex-[2] bg-sky-500 text-white py-4 rounded-[20px] font-black shadow-xl">儲存項目</button>
+                                        <button onClick={() => handleSave(form)} className="flex-[2] bg-sky-500 text-white py-4 rounded-[20px] font-black shadow-xl">儲存資訊</button>
                                     </div>
                                 </div>
                             </div>
