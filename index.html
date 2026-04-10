@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinTin 系統 - 全功能同步版</title>
+    <title>LinTin 系統 - 自動匯率同步版</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -25,7 +25,6 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // ✅ 沿用你的 Firebase 配置
         const firebaseConfig = {
             apiKey: "AIzaSyCK50TNqgRnXna4fd7x34rnslCfIVotZY4",
             authDomain: "lintin-9aecb.firebaseapp.com",
@@ -54,6 +53,7 @@
         const App = () => {
             const [items, setItems] = useState([]);
             const [credit, setCredit] = useState({ ntd: 0, foreign: 0, cur: 'KRW' });
+            // 預設匯率 (備援用)
             const [rates, setRates] = useState({ KRW: 0.0215, JPY: 0.1997, THB: 0.9, HKD: 4.1, AUD: 22.3, USD: 32.5, NTD: 1 });
             const [viewMode, setViewMode] = useState('purchase'); 
             const [activePCat, setActivePCat] = useState('全部');
@@ -63,6 +63,33 @@
             const [showBankModal, setShowBankModal] = useState(false);
             const [bankData, setBankData] = useState({ customer: '', lastFive: '' });
             const [form, setForm] = useState({ customer: '', product: '', price: '', fee: '', payer: '無', cur: 'KRW', fPrice: '', cat: '預設', orderStatus: '待付款', lastFive: '' });
+
+            // 🌐 核心：即時抓取匯率 API
+            useEffect(() => {
+                const fetchRates = async () => {
+                    try {
+                        const response = await fetch('https://open.er-api.com/v6/latest/TWD');
+                        const data = await response.json();
+                        if (data && data.rates) {
+                            // API 給的是 1 TWD 等於多少外幣，所以我們要倒過來計算
+                            const newRates = {
+                                KRW: 1 / data.rates.KRW,
+                                JPY: 1 / data.rates.JPY,
+                                THB: 1 / data.rates.THB,
+                                HKD: 1 / data.rates.HKD,
+                                AUD: 1 / data.rates.AUD,
+                                USD: 1 / data.rates.USD,
+                                NTD: 1
+                            };
+                            setRates(newRates);
+                            console.log("匯率已自動更新:", newRates);
+                        }
+                    } catch (error) {
+                        console.error("匯率抓取失敗，使用預設值:", error);
+                    }
+                };
+                fetchRates();
+            }, []);
 
             useEffect(() => {
                 const itemsRef = db.ref('items');
@@ -127,19 +154,19 @@
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 mb-5">
-                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
+                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-center">
                                 <p className="text-[10px] font-bold text-slate-400 mb-1 uppercase">餘額</p>
-                                <div className="flex items-center gap-1">
-                                    <input type="number" className="stat-input text-[11px] text-amber-500 w-12" value={credit.foreign} onChange={e => updateCredit({...credit, foreign: e.target.value})} />
+                                <div className="flex items-center justify-center gap-1">
+                                    <input type="number" className="stat-input text-[11px] text-amber-500 w-12 text-center" value={credit.foreign} onChange={e => updateCredit({...credit, foreign: e.target.value})} />
                                     <span className="text-[9px] font-black text-amber-400">{credit.cur}</span>
                                 </div>
-                                <div className="flex items-center text-[11px] font-black text-slate-800">$<input type="number" className="stat-input flex-1 ml-0.5" value={credit.ntd} onChange={e => updateCredit({...credit, ntd: e.target.value})} /></div>
+                                <div className="flex items-center justify-center text-[11px] font-black text-slate-800">$<input type="number" className="stat-input flex-1 ml-0.5 text-center" value={credit.ntd} onChange={e => updateCredit({...credit, ntd: e.target.value})} /></div>
                             </div>
-                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
+                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-center">
                                 <p className="text-[10px] font-bold text-slate-400 mb-1 uppercase">待收</p>
                                 <p className="text-xs font-black text-sky-600 mt-1">${stats.pending.toLocaleString()}</p>
                             </div>
-                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
+                            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-center">
                                 <p className="text-[10px] font-bold text-slate-400 mb-1 uppercase">利潤</p>
                                 <p className="text-xs font-black text-emerald-500 mt-1">${stats.profit.toLocaleString()}</p>
                             </div>
@@ -200,7 +227,6 @@
                                         {groupedOrders[customer].items.map(item => (
                                             <div key={item.id} className="bg-slate-50/40 p-4 rounded-2xl flex justify-between items-center">
                                                 <div className="flex-1"><span className="text-[9px] font-black text-slate-400 uppercase">#{item.cat}</span><p className="text-xs font-black text-slate-700">{item.product}</p><p className="text-[10px] font-bold text-slate-400">NT$ {Number(item.price).toLocaleString()} / {item.fPrice} {item.cur}</p></div>
-                                                {/* ✅ 訂單管理現在同時擁有編輯與刪除功能 */}
                                                 <div className="flex gap-2">
                                                     <button onClick={() => { setForm(item); setIsEditing(item.id); setShowModal(true); }} className="text-slate-300 p-2 active-scale"><Icon name="edit" className="w-4 h-4" /></button>
                                                     <button onClick={() => handleDelete(item.id)} className="text-rose-200 p-2 active-scale"><Icon name="trash" className="w-4 h-4" /></button>
@@ -241,7 +267,10 @@
                                     <div><p className="field-label">商品內容 Product</p><input className="field-value" value={form.product} onChange={e => setForm({...form, product: e.target.value})} /></div>
                                     <div className="bg-slate-50 p-5 rounded-[28px] space-y-4 shadow-inner border border-slate-100">
                                         <div className="grid grid-cols-5 gap-1">
-                                            {Object.keys(rates).map(c => <button key={c} onClick={() => setForm({...form, cur: c})} className={`py-2 rounded-lg text-[10px] font-black border transition-all ${form.cur === c ? 'bg-sky-500 border-sky-600 text-white' : 'bg-white text-slate-400'}`}>{c}</button>)}
+                                            {Object.keys(rates).map(c => <button key={c} onClick={() => {
+                                                const newRate = rates[c] || 1;
+                                                setForm({...form, cur: c, price: form.fPrice ? Math.round(form.fPrice * newRate) : form.price });
+                                            }} className={`py-2 rounded-lg text-[10px] font-black border transition-all ${form.cur === c ? 'bg-sky-500 border-sky-600 text-white' : 'bg-white text-slate-400'}`}>{c}</button>)}
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div><p className="text-[9px] font-black text-amber-500 mb-1 ml-1">外幣單價</p><input type="number" className="field-value border-none text-amber-600 font-bold bg-white" value={form.fPrice} onChange={e => {
